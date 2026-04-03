@@ -229,7 +229,9 @@ let adminPinBuf = '';
 let displayPinBuf = '';
 let currentMode = null;
 
-let FB_URL = localStorage.getItem('pizza_fb_url') || '';
+const FB_DEFAULT = 'https://pizzapocket-dz-default-rtdb.firebaseio.com';
+let FB_URL = localStorage.getItem('pizza_fb_url') || FB_DEFAULT;
+if (!localStorage.getItem('pizza_fb_url')) localStorage.setItem('pizza_fb_url', FB_DEFAULT);
 let soundEnabled = false;
 
 let channel = null;
@@ -244,7 +246,6 @@ let fbLastOrdersHash = '';
 
 function startFbPolling() {
     if (fbPollInt) clearInterval(fbPollInt);
-    if (!FB_URL) return;
     fbPollInt = setInterval(async () => {
         try {
             const data = await fbGet('state');
@@ -263,7 +264,7 @@ function startFbPolling() {
                 announceOrder(data.sound.n);
             }
         } catch(e) {}
-    }, 1500);
+    }, 1000);
 }
 function stopFbPolling() { if (fbPollInt) clearInterval(fbPollInt); fbPollInt = null; }
 
@@ -274,7 +275,7 @@ async function saveAll() { await saveOrders(); await saveArchive(); }
 function loadOrders() { try { const saved = localStorage.getItem(SK_O); if (saved) orders = JSON.parse(saved); else orders = []; } catch(e) { orders = []; } }
 function loadArchive() { try { const saved = localStorage.getItem(SK_A); if (saved) archive = JSON.parse(saved); else archive = []; } catch(e) { archive = []; } }
 async function loadAll() { loadOrders(); loadArchive(); await syncFromFirebase(); }
-async function syncFromFirebase() { if (!FB_URL) return; try { const data = await fbGet('state'); if (data) { if (data.orders) { orders = data.orders; localStorage.setItem(SK_O, JSON.stringify(orders)); fbLastOrdersHash = JSON.stringify(orders); } if (data.archive) { archive = data.archive; localStorage.setItem(SK_A, JSON.stringify(archive)); } if (data.sound && data.sound.ts) fbLastSoundTs = data.sound.ts; } } catch(e) { console.warn('syncFromFirebase failed', e); } }
+async function syncFromFirebase() { try { const data = await fbGet('state'); if (data) { if (data.orders) { orders = data.orders; localStorage.setItem(SK_O, JSON.stringify(orders)); fbLastOrdersHash = JSON.stringify(orders); } if (data.archive) { archive = data.archive; localStorage.setItem(SK_A, JSON.stringify(archive)); } if (data.sound && data.sound.ts) fbLastSoundTs = data.sound.ts; } } catch(e) { console.warn('syncFromFirebase failed', e); } }
 
 window.addEventListener('storage', function(e) { if (e.key === SK_O) { loadOrders(); if (currentMode === 'admin') renderAdmin(); if (currentMode === 'display') renderDisplay(); } if (e.key === SK_SND && currentMode === 'display') checkAndPlaySound(); });
 
@@ -313,34 +314,53 @@ async function goToAdmin(skipLoad = false){ document.getElementById('home').clas
 async function goToDisplay(skipLoad = false){ 
     document.getElementById('home').classList.remove('show'); 
     document.getElementById('adminScreen').classList.remove('active'); 
-    document.getElementById('displayScreen').classList.add('active'); 
-    await loadAll(); 
-    renderDisplay(); 
-    startClk(); 
-    startFbPolling();
-    // تفعيل الصوت تلقائياً عند أول لمسة/نقرة على الشاشة
+    document.getElementById('displayScreen').classList.add('active');
     soundEnabled = false;
-    const activateOnTouch = () => {
-        if (soundEnabled) return;
+    // أظهر شاشة تفعيل الصوت أولاً — ضرورة متصفح
+    showSoundActivationScreen();
+}
+
+function showSoundActivationScreen() {
+    // إنشاء overlay تفعيل الصوت
+    let overlay = document.getElementById('soundActivationOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'soundActivationOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:8000;background:linear-gradient(145deg,#081A19,#0C5F5A);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
+        overlay.innerHTML = `
+            <div style="font-size:60px">🔊</div>
+            <div style="font-family:Playfair Display,serif;font-size:28px;font-weight:900;color:#F0C040;text-align:center">شاشة العرض</div>
+            <div style="color:rgba(255,255,255,0.7);font-size:15px;text-align:center;max-width:280px;line-height:1.7">اضغط هنا لتفعيل الصوت<br>والبدء في العرض</div>
+            <button onclick="activateSoundAndStart()" style="margin-top:10px;padding:18px 40px;background:#F0C040;color:#081A19;border:none;border-radius:16px;font-size:18px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif">▶ تفعيل وبدء العرض</button>
+            <div style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center">هذه الخطوة مطلوبة من المتصفح<br>لتفعيل الصوت</div>
+        `;
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+}
+
+async function activateSoundAndStart() {
+    const overlay = document.getElementById('soundActivationOverlay');
+    // تفعيل الصوت بعد تفاعل المستخدم
+    try {
         const ctx = getAudioContext();
-        ctx.resume().then(() => {
-            soundEnabled = true;
-            const btn = document.getElementById('enableSoundBtnDisplay');
-            if (btn) { btn.textContent = '🔊 الصوت مفعّل'; btn.style.background = 'rgba(14,122,115,0.8)'; }
-        });
-        document.removeEventListener('click', activateOnTouch);
-        document.removeEventListener('touchstart', activateOnTouch);
-    };
-    document.addEventListener('click', activateOnTouch);
-    document.addEventListener('touchstart', activateOnTouch);
-    // تحديث تلقائي كل 2 ثانية
-    if (dispInt) clearInterval(dispInt);
-    dispInt = setInterval(async () => {
-        if (currentMode !== 'display') return;
-        if (FB_URL) return; // Firebase يتولى التحديث
-        loadOrders();
-        renderDisplay();
-    }, 2000);
+        await ctx.resume();
+        // تفعيل speech synthesis
+        const synth = window.speechSynthesis;
+        const u = new SpeechSynthesisUtterance('');
+        u.volume = 0;
+        synth.speak(u);
+    } catch(e) {}
+    soundEnabled = true;
+    if (overlay) overlay.style.display = 'none';
+    // تحديث الزر
+    const btn = document.getElementById('enableSoundBtnDisplay');
+    if (btn) { btn.textContent = '🔊 الصوت مفعّل'; btn.style.background = 'rgba(14,122,115,0.9)'; }
+    // الآن ابدأ التطبيق
+    await loadAll();
+    renderDisplay();
+    startClk();
+    startFbPolling();
 }
 function stopAll(){ if(dispInt) clearInterval(dispInt); if(clkInt) clearInterval(clkInt); dispInt = null; clkInt = null; stopFbPolling(); }
 
