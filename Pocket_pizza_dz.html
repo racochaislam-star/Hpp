@@ -179,6 +179,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);
 @media(min-width: 1024px) and (min-height: 600px){
   .hbtn-admin{display: none !important;}
 }
+/* شاشة الرقم الكبير */
+.big-num-overlay{position:fixed;inset:0;z-index:7000;background:linear-gradient(145deg,#081E1C,#0C4A47);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:opacity .4s}
+.big-num-overlay.show{opacity:1;pointer-events:all}
+.big-num-label{font-size:13px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(232,200,74,.6)}
+.big-num-number{font-family:'Playfair Display',serif;font-size:clamp(120px,28vw,220px);font-weight:900;color:#E8C84A;line-height:1;text-shadow:0 0 80px rgba(232,200,74,.5);animation:numPop .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes numPop{from{transform:scale(.5);opacity:0}}
+.big-num-fr{font-size:clamp(16px,3vw,24px);color:rgba(255,255,255,.85);font-weight:600;text-align:center;margin-top:4px}
+.big-num-en{font-size:clamp(13px,2.2vw,19px);color:rgba(232,200,74,.6);font-weight:500;text-align:center}
+.big-num-bar{width:100px;height:4px;background:rgba(232,200,74,.15);border-radius:99px;overflow:hidden;margin-top:14px}
+.big-num-bar-fill{height:100%;background:#E8C84A;border-radius:99px;transform-origin:left;animation:barShrink 6s linear forwards}
+@keyframes barShrink{to{transform:scaleX(0)}}
 </style>
 </head>
 <body>
@@ -206,6 +217,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);
 <div class="moverlay" id="fbSetupModal" style="z-index:10000"><div class="mbox" style="max-width:420px"><div class="mtitle">🔥 إعداد Firebase (مرة واحدة فقط)</div><p style="font-size:12px;color:#666;margin-bottom:14px;line-height:1.8">لمزامنة التطبيق بين الأجهزة المختلفة، أدخل رابط قاعدة بيانات Firebase الخاصة بك.<br><strong>كيف تحصل عليه؟</strong> اذهب إلى <a href="https://console.firebase.google.com" target="_blank" style="color:var(--teal)">console.firebase.google.com</a> ← أنشئ مشروع ← Realtime Database ← انسخ الرابط</p><div class="sgrp" style="margin-bottom:14px"><label>رابط Firebase Realtime Database</label><input id="fbUrlInput" type="text" placeholder="https://your-app-default-rtdb.firebaseio.com" style="width:100%;padding:11px 13px;border:2px solid rgba(12,95,90,.18);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;background:#fff;color:var(--dark)"></div><p style="font-size:11px;color:#999;margin-bottom:14px">⚠️ تأكد من ضبط قواعد قاعدة البيانات على "read: true, write: true" في Firebase Console</p><div class="mactions"><button class="mbtn mbtn-cn" onclick="fbSetupSkip()">تخطي (نفس الجهاز فقط)</button><button class="mbtn mbtn-ok" onclick="fbSetupSave()">💾 حفظ</button></div></div></div>
 
 <div class="twrap" id="twrap"></div>
+
+<!-- شاشة الرقم الكبير -->
+<div class="big-num-overlay" id="bigNumOverlay">
+  <div class="big-num-label">🔔 Commande Prête</div>
+  <div class="big-num-number" id="bigNumValue">00</div>
+  <div class="big-num-fr" id="bigNumFr"></div>
+  <div class="big-num-en" id="bigNumEn"></div>
+  <div class="big-num-bar"><div class="big-num-bar-fill" id="bigNumBar"></div></div>
+</div>
 
 <script>
 const UNIFIED_PIN = '20302030';
@@ -424,26 +444,88 @@ function autoEnableSound() {
     });
 }
 
-function announceOrder(numStr){
-    // الصوت والتنبيه فقط في شاشة العرض
+function showBigNumber(numStr) {
     if (currentMode !== 'display') return;
-    if (!soundEnabled) {
-        // محاولة تفعيل تلقائي
-        autoEnableSound();
-        // انتظر قليلاً ثم حاول مجدداً
-        setTimeout(() => {
-            if (soundEnabled) announceOrder(numStr);
-        }, 500);
-        return;
-    }
-    showAudioWave('🎙️ Order number ' + numStr + '...');
+    const overlay = document.getElementById('bigNumOverlay');
+    const frText = `Commande numéro ${numberToFrench(numStr)}, votre commande est prête`;
+    const enText = `Order number ${numStr}, your order is ready`;
+    document.getElementById('bigNumValue').textContent = numStr;
+    document.getElementById('bigNumFr').textContent = '🇫🇷 ' + frText;
+    document.getElementById('bigNumEn').textContent = '🇬🇧 ' + enText;
+    // إعادة تشغيل animation الشريط
+    const bar = document.getElementById('bigNumBar');
+    bar.style.animation = 'none';
+    bar.offsetHeight; // reflow
+    bar.style.animation = 'barShrink 6s linear forwards';
+    overlay.classList.add('show');
+    setTimeout(() => overlay.classList.remove('show'), 6000);
+}
+
+function announceOrder(numStr){
+    if (currentMode !== 'display') return;
+    // أظهر الرقم الكبير على الشاشة دائماً
+    showBigNumber(numStr);
+    // الصوت إذا مفعّل
+    if (!soundEnabled) return;
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
     playChime(() => {
-        speakText(`Commande numéro ${numberToFrench(numStr)}, votre commande est prête, veuillez vous présenter s'il vous plaît`,'fr-FR', 1.0, 0.87, 1.05, () => {
-            setTimeout(() => {
-                speakText(`Order number ${numStr}, your order is ready, please come forward`,'en-US', 1.0, 0.85, 1.02, () => hideAudioWave());
-            }, 450);
-        });
+        robustSpeak(
+            `Commande numéro ${numberToFrench(numStr)}, votre commande est prête, veuillez vous présenter s'il vous plaît`,
+            'fr-FR',
+            () => {
+                setTimeout(() => {
+                    robustSpeak(
+                        `Order number ${numStr}, your order is ready, please come forward`,
+                        'en-US',
+                        () => hideAudioWave()
+                    );
+                }, 600);
+            }
+        );
     });
+    showAudioWave('🎙️ Commande ' + numStr);
+}
+
+function robustSpeak(text, lang, callback) {
+    if (!window.speechSynthesis) { if(callback) callback(); return; }
+    const synth = window.speechSynthesis;
+    // إيقاف أي كلام سابق
+    synth.cancel();
+    setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang;
+        u.volume = 1.0;
+        u.rate = 0.88;
+        u.pitch = 1.05;
+        // اختيار صوت أنثى
+        const voices = synth.getVoices();
+        let voice = null;
+        if (lang.startsWith('fr')) {
+            voice = voices.find(v => v.lang === 'fr-FR' && /female|femme|amelie|marie|google/i.test(v.name))
+                 || voices.find(v => v.lang === 'fr-FR')
+                 || voices.find(v => v.lang.startsWith('fr'));
+        } else {
+            voice = voices.find(v => v.lang === 'en-US' && /female|google|samantha/i.test(v.name))
+                 || voices.find(v => v.lang === 'en-US')
+                 || voices.find(v => v.lang.startsWith('en'));
+        }
+        if (voice) u.voice = voice;
+        u.onend = () => { if(callback) callback(); };
+        u.onerror = () => { if(callback) callback(); };
+        // ضمان التشغيل — Chrome bug fix
+        synth.speak(u);
+        // Chrome أحياناً يتجمد — هذا الحل يمنع التجمد
+        if (navigator.userAgent.includes('Chrome')) {
+            const resume = setInterval(() => {
+                if (!synth.speaking) { clearInterval(resume); return; }
+                synth.pause();
+                synth.resume();
+            }, 10000);
+            u.onend = () => { clearInterval(resume); if(callback) callback(); };
+            u.onerror = () => { clearInterval(resume); if(callback) callback(); };
+        }
+    }, 150);
 }
 function speakText(text, lang, volume, rate, pitch, callback){
     if(!window.speechSynthesis){ if(callback) callback(); return; }
