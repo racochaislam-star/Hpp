@@ -437,9 +437,9 @@ function announceOrder(numStr){
     }
     showAudioWave('🎙️ Order number ' + numStr + '...');
     playChime(() => {
-        speakText(`Order number ${numStr}, your order is ready, please come forward`,'en-US', 1.0, 0.85, 1.02, () => {
+        speakText(`Commande numéro ${numberToFrench(numStr)}, votre commande est prête, veuillez vous présenter s'il vous plaît`,'fr-FR', 1.0, 0.87, 1.05, () => {
             setTimeout(() => {
-                speakText(`Commande numéro ${numberToFrench(numStr)}, votre commande est prête, veuillez vous présenter s'il vous plaît`,'fr-FR', 1.0, 0.87, 1.05, () => hideAudioWave());
+                speakText(`Order number ${numStr}, your order is ready, please come forward`,'en-US', 1.0, 0.85, 1.02, () => hideAudioWave());
             }, 450);
         });
     });
