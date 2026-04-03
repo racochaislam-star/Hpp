@@ -435,9 +435,9 @@ function announceOrder(numStr){
         }, 500);
         return;
     }
-    showAudioWave('🎙️ طلبية رقم ' + numStr + '...');
+    showAudioWave('🎙️ Order number ' + numStr + '...');
     playChime(() => {
-        speakText(`طلبيتك رقم ${numberToArabic(numStr)} جاهزة، تفضل من فضلك`,'ar-SA', 1.0, 0.85, 1.02, () => {
+        speakText(`Order number ${numStr}, your order is ready, please come forward`,'en-US', 1.0, 0.85, 1.02, () => {
             setTimeout(() => {
                 speakText(`Commande numéro ${numberToFrench(numStr)}, votre commande est prête, veuillez vous présenter s'il vous plaît`,'fr-FR', 1.0, 0.87, 1.05, () => hideAudioWave());
             }, 450);
