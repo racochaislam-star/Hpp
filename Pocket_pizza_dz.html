@@ -180,15 +180,63 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);
   .hbtn-admin{display: none !important;}
 }
 /* شاشة الرقم الكبير */
-.big-num-overlay{position:fixed;inset:0;z-index:7000;background:linear-gradient(145deg,#081E1C,#0C4A47);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:opacity .4s}
+.big-num-overlay{
+  position:fixed;inset:0;z-index:7000;
+  background:linear-gradient(160deg,#071614 0%,#0C4A47 50%,#071614 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;opacity:0;pointer-events:none;transition:opacity .5s;overflow:hidden;
+}
+.big-num-overlay::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 50%, rgba(232,200,74,.08) 0%, transparent 70%);
+  pointer-events:none;
+}
 .big-num-overlay.show{opacity:1;pointer-events:all}
-.big-num-label{font-size:13px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(232,200,74,.6)}
-.big-num-number{font-family:'Playfair Display',serif;font-size:clamp(120px,28vw,220px);font-weight:900;color:#E8C84A;line-height:1;text-shadow:0 0 80px rgba(232,200,74,.5);animation:numPop .5s cubic-bezier(.34,1.56,.64,1) both}
-@keyframes numPop{from{transform:scale(.5);opacity:0}}
-.big-num-fr{font-size:clamp(16px,3vw,24px);color:rgba(255,255,255,.85);font-weight:600;text-align:center;margin-top:4px}
-.big-num-en{font-size:clamp(13px,2.2vw,19px);color:rgba(232,200,74,.6);font-weight:500;text-align:center}
-.big-num-bar{width:100px;height:4px;background:rgba(232,200,74,.15);border-radius:99px;overflow:hidden;margin-top:14px}
-.big-num-bar-fill{height:100%;background:#E8C84A;border-radius:99px;transform-origin:left;animation:barShrink 6s linear forwards}
+.big-num-top{
+  display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px;
+}
+.big-num-brand{
+  font-family:'Playfair Display',serif;font-size:clamp(18px,4vw,28px);font-weight:900;
+  color:#E8C84A;letter-spacing:3px;text-transform:uppercase;opacity:.9;
+}
+.big-num-divider{
+  width:40px;height:1px;background:rgba(232,200,74,.3);
+}
+.big-num-ready{
+  font-size:clamp(9px,1.8vw,12px);font-weight:700;letter-spacing:5px;
+  text-transform:uppercase;color:rgba(232,200,74,.45);
+}
+.big-num-number{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(140px,32vw,240px);
+  font-weight:900;color:#E8C84A;line-height:.9;
+  text-shadow:0 0 100px rgba(232,200,74,.35), 0 0 40px rgba(232,200,74,.2);
+  animation:numPop .6s cubic-bezier(.34,1.56,.64,1) both;
+  margin:10px 0 20px;
+}
+@keyframes numPop{from{transform:scale(.4);opacity:0}}
+.big-num-texts{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  border-top:1px solid rgba(232,200,74,.12);
+  padding-top:20px;width:90%;max-width:480px;
+}
+.big-num-fr{
+  font-size:clamp(14px,2.8vw,20px);color:rgba(255,255,255,.88);
+  font-weight:500;text-align:center;line-height:1.5;
+}
+.big-num-en{
+  font-size:clamp(11px,2vw,16px);color:rgba(232,200,74,.55);
+  font-weight:400;text-align:center;letter-spacing:.3px;
+}
+.big-num-bar{
+  width:120px;height:2px;background:rgba(232,200,74,.12);
+  border-radius:99px;overflow:hidden;margin-top:28px;
+}
+.big-num-bar-fill{
+  height:100%;background:linear-gradient(90deg,#E8C84A,rgba(232,200,74,.4));
+  border-radius:99px;transform-origin:left;
+  animation:barShrink 30s linear forwards;
+}
 @keyframes barShrink{to{transform:scaleX(0)}}
 </style>
 </head>
@@ -220,10 +268,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);
 
 <!-- شاشة الرقم الكبير -->
 <div class="big-num-overlay" id="bigNumOverlay">
-  <div class="big-num-label">🔔 Commande Prête</div>
+  <div class="big-num-top">
+    <div class="big-num-brand">Pizza Pocket</div>
+    <div class="big-num-divider"></div>
+    <div class="big-num-ready">Votre commande est prête</div>
+  </div>
   <div class="big-num-number" id="bigNumValue">00</div>
-  <div class="big-num-fr" id="bigNumFr"></div>
-  <div class="big-num-en" id="bigNumEn"></div>
+  <div class="big-num-texts">
+    <div class="big-num-fr" id="bigNumFr"></div>
+    <div class="big-num-en" id="bigNumEn"></div>
+  </div>
   <div class="big-num-bar"><div class="big-num-bar-fill" id="bigNumBar"></div></div>
 </div>
 
@@ -456,9 +510,9 @@ function showBigNumber(numStr) {
     const bar = document.getElementById('bigNumBar');
     bar.style.animation = 'none';
     bar.offsetHeight; // reflow
-    bar.style.animation = 'barShrink 6s linear forwards';
+    bar.style.animation = 'barShrink 30s linear forwards';
     overlay.classList.add('show');
-    setTimeout(() => overlay.classList.remove('show'), 6000);
+    setTimeout(() => overlay.classList.remove('show'), 30000);
 }
 
 function announceOrder(numStr){
