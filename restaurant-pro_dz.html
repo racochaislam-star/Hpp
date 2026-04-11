@@ -753,7 +753,7 @@ function stopLocalPolling() {
 function getDeviceId() {
   let id = localStorage.getItem('rq_device_id');
   if (!id) {
-    id = 'DEV-' + Math.random().toString(36).substr(2,9).toUpperCase();
+    id = 'DEV-' + Math.random().toString(36).slice(2,11).toUpperCase();
     localStorage.setItem('rq_device_id', id);
   }
   return id;
@@ -780,9 +780,9 @@ function checkLicense() {
 
 function formatLicenseInput(e) {
   let val = e.target.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  if (val.length > 4) val = val.substr(0,4) + '-' + val.substr(4);
-  if (val.length > 9) val = val.substr(0,9) + '-' + val.substr(9);
-  e.target.value = val.substr(0,14);
+  if (val.length > 4) val = val.slice(0,4) + '-' + val.slice(4);
+  if (val.length > 9) val = val.slice(0,9) + '-' + val.slice(9);
+  e.target.value = val.slice(0,14);
 }
 
 document.getElementById('licInput').addEventListener('input', formatLicenseInput);
@@ -1220,7 +1220,7 @@ function showHome() { clearSession(); currentMode = null; document.getElementByI
 function goHomeFromAdmin(){ showHome(); }
 function goHomeFromDisplay(){ showHome(); }
 
-async function goToAdmin(skipLoad=false) {
+async function goToAdmin(skipLoad=false) { // skipLoad kept for session-restore API compatibility
   currentMode = 'admin'; // FIX: always set currentMode
   document.getElementById('home').classList.remove('show');
   document.getElementById('adminScreen').classList.add('active');
@@ -1234,7 +1234,7 @@ async function goToAdmin(skipLoad=false) {
   showSyncIndicator();
 }
 
-async function goToDisplay(skipLoad=false) {
+async function goToDisplay(skipLoad=false) { // skipLoad kept for session-restore API compatibility
   currentMode = 'display'; // FIX: always set currentMode
   document.getElementById('home').classList.remove('show');
   document.getElementById('adminScreen').classList.remove('active');
