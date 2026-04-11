@@ -512,6 +512,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);
       <div style="font-size:10px;color:#999;margin-top:4px">Laissez vide pour utiliser le mode local (même appareil uniquement)</div>
     </div>
 
+    <!-- N8N -->
+    <div class="settings-section">
+      <div class="settings-title">⚡ n8n (automatisation)</div>
+      <div class="set-row"><label>URL Webhook n8n</label>
+        <input id="setN8nUrl" type="text" placeholder="https://your-n8n.app/webhook/xxx">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#555;cursor:pointer">
+          <input type="checkbox" id="n8nEvtNew" style="width:16px;height:16px;accent-color:#0C5F5A"> 📥 Nouvelle commande
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#555;cursor:pointer">
+          <input type="checkbox" id="n8nEvtDone" style="width:16px;height:16px;accent-color:#0C5F5A"> ✅ Commande terminée
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#555;cursor:pointer">
+          <input type="checkbox" id="n8nEvtRecall" style="width:16px;height:16px;accent-color:#0C5F5A"> 📣 Rappel commande
+        </label>
+      </div>
+      <button onclick="testN8n()" style="margin-top:10px;width:100%;padding:10px;background:rgba(12,95,90,.1);color:#0C5F5A;border:1.5px dashed rgba(12,95,90,.3);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">🧪 Tester le webhook</button>
+      <div style="font-size:10px;color:#999;margin-top:6px">Les données envoyées: événement, N° commande, nom restaurant, heure</div>
+    </div>
+
     <!-- PIN -->
     <div class="settings-section">
       <div class="settings-title">🔐 Codes PIN</div>
@@ -586,21 +607,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);
 // كل مفتاح مرتبط بـ deviceId (يمنع النقل بين أجهزة مختلفة)
 const APP_VERSION = '1.0.0';
 const SK_LIC = 'rq_license';
-const SK_CFG = 'rq_config';
-const SK_O = 'rq_orders';
-const SK_A = 'rq_archive';
-const SK_SND = 'rq_sound';
-const SK_SESSION = 'rq_session';
 
-// قائمة المفاتيح الصالحة (أنت تولّدها وتعطيها للزبون)
-// الصيغة: RESTO-XXXX-YYYY حيث XXXX وYYYY أرقام عشوائية
+// ============= مفاتيح البيانات مرتبطة بالترخيص (عزل كامل بين المطاعم) =============
+function getLicKey() { return localStorage.getItem(SK_LIC) || 'default'; }
+function SK_CFG()     { return 'rq_config_'   + getLicKey(); }
+function SK_O()       { return 'rq_orders_'   + getLicKey(); }
+function SK_A()       { return 'rq_archive_'  + getLicKey(); }
+function SK_SND()     { return 'rq_sound_'    + getLicKey(); }
+function SK_SESSION() { return 'rq_session_'  + getLicKey(); }
+
+// ============= 5 مفاتيح — مطعم مختلف لكل مفتاح =============
 const VALID_LICENSES = [
-  'RSTO-1234-ABCD', // مطعم 1
-  'RSTO-5678-EFGH', // مطعم 2
-  'RSTO-9012-IJKL', // مطعم 3
-  'RSTO-3456-MNOP', // مطعم 4
-  'RSTO-7890-QRST', // مطعم 5
-  'DEMO-0000-TEST', // نسخة تجريبية
+  'REST-A1B2-C3D4', // 🍕 مطعم 1
+  'REST-E5F6-G7H8', // 🍔 مطعم 2
+  'REST-I9J0-K1L2', // 🍣 مطعم 3
+  'REST-M3N4-O5P6', // 🌮 مطعم 4
+  'REST-Q7R8-S9T0', // 🥗 مطعم 5
+  'DEMO-0000-TEST', // 🧪 نسخة تجريبية
 ];
 
 // الإعدادات الافتراضية
@@ -618,11 +641,17 @@ const DEFAULT_CONFIG = {
   displayPin: '5678',
   mainPin: '20302030',
   fbUrl: '',
+  n8nUrl: '',          // ← webhook n8n
+  n8nEvents: {         // ← أي أحداث ترسل لـ n8n
+    orderNew: true,
+    orderDone: true,
+    orderRecall: false
+  },
   orderTypes: [
-    { id: 'table', icon: '🍽️', label: 'Table', hasNumber: true, max: 20 },
-    { id: 'chaise', icon: '🪑', label: 'Chaise', hasNumber: true, max: 10 },
-    { id: 'emporter', icon: '🛍️', label: 'À emporter', hasNumber: false },
-    { id: 'livraison', icon: '🛵', label: 'Livraison', hasNumber: false }
+    { id: 'table',     icon: '🍽️', label: 'Table',      hasNumber: true,  max: 20 },
+    { id: 'chaise',    icon: '🪑',  label: 'Chaise',     hasNumber: true,  max: 10 },
+    { id: 'emporter',  icon: '🛍️', label: 'À emporter', hasNumber: false },
+    { id: 'livraison', icon: '🛵',  label: 'Livraison',  hasNumber: false }
   ]
 };
 
@@ -665,23 +694,21 @@ let localPollLastSndTs = 0;
 
 function startLocalPolling() {
   setInterval(() => {
-    // Sync orders (works across all browsers on same device)
-    const raw = localStorage.getItem(SK_O) || '[]';
+    const raw = localStorage.getItem(SK_O()) || '[]';
     if (raw !== localPollLastOrdersHash) {
       localPollLastOrdersHash = raw;
       loadOrders();
       if (currentMode === 'admin') renderAdmin();
       if (currentMode === 'display') renderDisplay();
     }
-    // Sound trigger cross-browser
     if (currentMode === 'display') {
       try {
-        const sndRaw = localStorage.getItem(SK_SND);
+        const sndRaw = localStorage.getItem(SK_SND());
         if (sndRaw) {
           const s = JSON.parse(sndRaw);
           if (s && s.ts > localPollLastSndTs && (Date.now() - s.ts) < 15000) {
             localPollLastSndTs = s.ts;
-            if (!config.fbUrl) announceOrder(s.n); // Only if not already handled by FB
+            if (!config.fbUrl) announceOrder(s.n);
           }
         }
       } catch(e) {}
@@ -730,13 +757,13 @@ document.getElementById('licInput').addEventListener('input', formatLicenseInput
 // ============= CONFIG =============
 function loadConfig() {
   try {
-    const saved = localStorage.getItem(SK_CFG);
+    const saved = localStorage.getItem(SK_CFG());
     if (saved) config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
   } catch(e) { config = { ...DEFAULT_CONFIG }; }
 }
 
 function saveConfig() {
-  localStorage.setItem(SK_CFG, JSON.stringify(config));
+  localStorage.setItem(SK_CFG(), JSON.stringify(config));
 }
 
 function applyConfig() {
@@ -797,6 +824,11 @@ function openSettings() {
   document.getElementById('setDisplayPin').value = config.displayPin || '5678';
   document.getElementById('setMainPin').value = config.mainPin || '20302030';
   document.getElementById('setFbUrl').value = config.fbUrl || '';
+  document.getElementById('setN8nUrl').value = config.n8nUrl || '';
+  const evts = config.n8nEvents || {};
+  document.getElementById('n8nEvtNew').checked   = evts.orderNew   !== false;
+  document.getElementById('n8nEvtDone').checked  = evts.orderDone  !== false;
+  document.getElementById('n8nEvtRecall').checked = !!evts.orderRecall;
 
   renderOrderTypesList();
   updatePreview();
@@ -873,6 +905,12 @@ function saveSettings() {
   config.displayPin = document.getElementById('setDisplayPin').value || '5678';
   config.mainPin = document.getElementById('setMainPin').value || '20302030';
   config.fbUrl = document.getElementById('setFbUrl').value.trim().replace(/\/+$/,'');
+  config.n8nUrl = document.getElementById('setN8nUrl').value.trim().replace(/\/+$/,'');
+  config.n8nEvents = {
+    orderNew:   document.getElementById('n8nEvtNew').checked,
+    orderDone:  document.getElementById('n8nEvtDone').checked,
+    orderRecall:document.getElementById('n8nEvtRecall').checked
+  };
 
   saveConfig();
   applyConfig();
@@ -957,34 +995,73 @@ function startFbPolling() {
 
 function stopFbPolling() { if (fbPollInt) clearInterval(fbPollInt); fbPollInt = null; }
 
+// ============= N8N WEBHOOK =============
+async function n8nSend(event, data) {
+  if (!config.n8nUrl) return;
+  if (!config.n8nEvents) return;
+  if (!config.n8nEvents[event]) return;
+  try {
+    await fetch(config.n8nUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event,
+        restaurant: config.name || 'Restaurant',
+        license: getLicKey(),
+        timestamp: new Date().toISOString(),
+        ...data
+      })
+    });
+  } catch(e) { console.warn('n8n webhook error:', e); }
+}
+
+async function testN8n() {
+  const url = document.getElementById('setN8nUrl').value.trim();
+  if (!url) { toast('⚠️ Entrez d\'abord l\'URL du webhook'); return; }
+  try {
+    toast('🧪 Test en cours...');
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'test',
+        restaurant: config.name || 'Restaurant',
+        license: getLicKey(),
+        timestamp: new Date().toISOString(),
+        message: 'Test depuis RestaurantQ Pro ✅'
+      })
+    });
+    toast('✅ Webhook testé avec succès !');
+  } catch(e) { toast('❌ Échec: ' + e.message); }
+}
+
 // ============= DATA =============
 function broadcastUpdate(type, data = null) {
   if (channel) channel.postMessage({ type, data, timestamp: Date.now() });
 }
 
 async function saveOrders() {
-  localStorage.setItem(SK_O, JSON.stringify(orders));
+  localStorage.setItem(SK_O(), JSON.stringify(orders));
   fbLastOrdersHash = JSON.stringify(orders);
   localPollLastOrdersHash = JSON.stringify(orders);
   broadcastUpdate('orders_updated');
   await fbSave('state/orders', orders);
-  // Also push config so display devices get branding
   if (config.fbUrl) await fbSave('state/config', config);
 }
 
 async function saveArchive() {
-  localStorage.setItem(SK_A, JSON.stringify(archive));
+  localStorage.setItem(SK_A(), JSON.stringify(archive));
   await fbSave('state/archive', archive);
 }
 
 async function saveAll() { await saveOrders(); await saveArchive(); }
 
 function loadOrders() {
-  try { const s = localStorage.getItem(SK_O); orders = s ? JSON.parse(s) : []; } catch(e) { orders = []; }
+  try { const s = localStorage.getItem(SK_O()); orders = s ? JSON.parse(s) : []; } catch(e) { orders = []; }
 }
 
 function loadArchive() {
-  try { const s = localStorage.getItem(SK_A); archive = s ? JSON.parse(s) : []; } catch(e) { archive = []; }
+  try { const s = localStorage.getItem(SK_A()); archive = s ? JSON.parse(s) : []; } catch(e) { archive = []; }
 }
 
 async function syncFromFirebase() {
@@ -1000,14 +1077,14 @@ async function syncFromFirebase() {
 }
 
 window.addEventListener('storage', function(e) {
-  if (e.key === SK_O) { loadOrders(); if (currentMode === 'admin') renderAdmin(); if (currentMode === 'display') renderDisplay(); }
+  if (e.key === SK_O()) { loadOrders(); if (currentMode === 'admin') renderAdmin(); if (currentMode === 'display') renderDisplay(); }
 });
 
 // ============= SESSION =============
-function saveSession(mode) { localStorage.setItem(SK_SESSION, JSON.stringify({ mode, expires: Date.now() + 86400000 })); currentMode = mode; }
+function saveSession(mode) { localStorage.setItem(SK_SESSION(), JSON.stringify({ mode, expires: Date.now() + 86400000 })); currentMode = mode; }
 function checkSession() {
   try {
-    const s = JSON.parse(localStorage.getItem(SK_SESSION));
+    const s = JSON.parse(localStorage.getItem(SK_SESSION()));
     if (s && s.expires > Date.now()) {
       if (s.mode === 'admin') { goToAdmin(true); return true; }
       if (s.mode === 'display') { goToDisplay(true); return true; }
@@ -1015,7 +1092,7 @@ function checkSession() {
   } catch(e) {}
   return false;
 }
-function clearSession() { localStorage.removeItem(SK_SESSION); currentMode = null; }
+function clearSession() { localStorage.removeItem(SK_SESSION()); currentMode = null; }
 
 // ============= PIN =============
 function pp(d) { if(pinBuf.length>=8)return; pinBuf+=d; updatePinDots(); if(pinBuf.length===8)setTimeout(checkUnifiedPin,80); }
@@ -1217,6 +1294,7 @@ function confirmOrder() {
   setTimeout(()=>newSet.delete(curNum), 12000);
   saveAll();
   triggerSound(curNum);
+  n8nSend('orderNew', { orderNumber: curNum, orderType: curType, table, chaise });
   renderAdmin();
   // تحديث شاشة العرض إذا كانت نشطة
   if(currentMode === 'display') renderDisplay();
@@ -1226,12 +1304,18 @@ function confirmOrder() {
 
 function recall(n, playSound) {
   if(playSound){ triggerSound(n); toast('🔊 Son envoyé à l\'écran'); }
-  else { broadcastUpdate('orders_updated'); toast('📣 Commande '+n+' rappelée'); }
+  else { broadcastUpdate('orders_updated'); n8nSend('orderRecall', { orderNumber: n }); toast('📣 Commande '+n+' rappelée'); }
 }
 
 function completeOrder(n) {
   const i=orders.findIndex(o=>o.number===n);
-  if(i!==-1){ archive.unshift({...orders[i],completedTime:new Date().toISOString()}); orders.splice(i,1); saveAll(); renderAdmin(); toast('🎉 Commande '+n+' terminée'); }
+  if(i!==-1){
+    const done = {...orders[i], completedTime:new Date().toISOString()};
+    archive.unshift(done);
+    n8nSend('orderDone', { orderNumber: n, orderType: done.type });
+    orders.splice(i,1);
+    saveAll(); renderAdmin(); toast('🎉 Commande '+n+' terminée');
+  }
 }
 
 // ============= ARCHIVE =============
@@ -1354,7 +1438,7 @@ function robustSpeak(text, lang, callback) {
 async function triggerSound(orderNum) {
   try {
     const soundData={n:orderNum,ts:Date.now()};
-    localStorage.setItem(SK_SND,JSON.stringify(soundData));
+    localStorage.setItem(SK_SND(),JSON.stringify(soundData));
     broadcastUpdate('sound_trigger',{orderNum});
     fbLastSoundTs=soundData.ts;
     await fbSave('state/sound',soundData);
