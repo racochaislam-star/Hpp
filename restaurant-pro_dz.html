@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>RestaurantQ Pro — Système Avancé</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ===== VARIABLES DYNAMIQUES (modifiées par les paramètres) ===== */
+:root{
+  --primary:#0C5F5A;
+  --primary2:#0E7A73;
+  --accent:#F0C040;
+  --danger:#C8291A;
+  --dark:#081A19;
+  --cream:#F7F2E8;
+  --white:#fff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);min-height:100vh;overflow-x:hidden}
+
+/* ===== SPLASH ===== */
+#splash{position:fixed;inset:0;z-index:9999;background:linear-gradient(145deg,var(--dark),var(--primary));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .6s,transform .6s}
+#splash.hide{opacity:0;pointer-events:none;transform:scale(1.05)}
+.sp-icon{font-size:56px;animation:bob 1s ease infinite alternate}
+@keyframes bob{to{transform:translateY(-10px)}}
+.sp-name{font-family:'Playfair Display',serif;font-size:clamp(32px,8vw,60px);font-weight:900;color:var(--accent);line-height:1;text-align:center}
+.sp-tag{font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px}
+.sp-bar{width:56px;height:3px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin-top:14px}
+.sp-bar::after{content:'';display:block;height:100%;width:0;background:var(--accent);border-radius:99px;animation:ld 1.6s ease forwards}
+@keyframes ld{to{width:100%}}
+
+/* ===== LICENSE SCREEN ===== */
+#licenseScreen{position:fixed;inset:0;z-index:8500;background:linear-gradient(145deg,var(--dark),var(--primary));display:none;align-items:center;justify-content:center;padding:20px}
+#licenseScreen.active{display:flex}
+.lic-card{background:rgba(255,255,255,.07);border:1px solid rgba(240,192,64,.3);border-radius:28px;padding:36px 28px;width:100%;max-width:360px;text-align:center;backdrop-filter:blur(18px);animation:popUp .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes popUp{from{opacity:0;transform:translateY(20px) scale(.95)}}
+.lic-icon{font-size:44px;margin-bottom:8px}
+.lic-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--accent);margin-bottom:4px}
+.lic-sub{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px}
+.lic-input{width:100%;padding:14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(240,192,64,.3);border-radius:12px;color:#fff;font-size:16px;font-family:'DM Sans',sans-serif;text-align:center;letter-spacing:3px;margin-bottom:12px;outline:none}
+.lic-input:focus{border-color:var(--accent)}
+.lic-btn{width:100%;padding:15px;background:var(--accent);color:var(--dark);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px}
+.lic-err{color:var(--danger);font-size:12px;min-height:18px;font-weight:600}
+.lic-info{font-size:10px;color:rgba(255,255,255,.25);margin-top:14px;line-height:1.8}
+
+/* ===== PIN SCREEN ===== */
+#pinScreen{position:fixed;inset:0;z-index:500;background:linear-gradient(145deg,var(--dark),var(--primary));display:none;align-items:center;justify-content:center;padding:20px}
+#pinScreen.active{display:flex}
+.pin-card{background:rgba(255,255,255,.07);border:1px solid rgba(240,192,64,.3);border-radius:28px;padding:36px 28px;width:100%;max-width:340px;text-align:center;backdrop-filter:blur(18px);animation:popUp .5s cubic-bezier(.34,1.56,.64,1) both}
+.pin-logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--accent);margin-bottom:4px}
+.pin-hint{font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:24px}
+.pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:transparent;transition:all .2s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);animation:shk .3s ease}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}
+.pin-btn{padding:17px;border:none;border-radius:14px;background:rgba(255,255,255,.1);color:#fff;font-family:'Playfair Display',serif;font-size:20px;font-weight:700;cursor:pointer;transition:all .15s}
+.pin-btn:active{transform:scale(.91)}
+.pin-del{background:rgba(200,41,26,.3);color:var(--danger)}
+.pin-err{color:var(--danger);font-size:12px;font-weight:600;min-height:18px;margin-top:2px}
+
+/* ===== HOME ===== */
+#home{min-height:100vh;background:linear-gradient(145deg,var(--dark),var(--primary));display:none;align-items:center;justify-content:center;padding:24px}
+#home.show{display:flex}
+.home-card{background:rgba(255,255,255,.06);border:1px solid rgba(240,192,64,.22);border-radius:30px;padding:44px 32px;width:100%;max-width:400px;text-align:center;backdrop-filter:blur(16px);animation:popUp .6s cubic-bezier(.34,1.56,.64,1) both}
+.home-logo-area{margin-bottom:16px}
+.home-brand{font-family:'Playfair Display',serif;font-size:42px;font-weight:900;color:var(--accent);line-height:1;margin-bottom:4px}
+.home-tag{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.38);text-transform:uppercase;margin-bottom:32px}
+.home-btns{display:flex;flex-direction:column;gap:12px}
+.hbtn{padding:19px 22px;border:none;border-radius:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .2s}
+.hbtn:active{transform:scale(.96)}
+.hbtn-admin{background:var(--accent);color:var(--dark);box-shadow:0 4px 22px rgba(240,192,64,.32)}
+.hbtn-display{background:var(--primary2);color:#fff;border:1px solid rgba(255,255,255,.13)}
+.home-info{margin-top:24px;font-size:11px;color:rgba(255,255,255,.28);line-height:2}
+
+/* ===== SCREENS ===== */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ===== TOPBAR ===== */
+.topbar{background:var(--primary);padding:0 14px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 18px rgba(0,0,0,.22)}
+.tb-brand{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:var(--accent)}
+.tb-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.badge{background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px}
+.bsm{padding:6px 11px;border:none;border-radius:9px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.11);color:#fff;transition:background .15s}
+.bsm-gold{background:var(--accent);color:var(--dark)}
+.bsm-red{background:rgba(200,41,26,.4);color:#fff}
+
+/* ===== ADMIN BODY ===== */
+.admin-body{flex:1;padding:14px;padding-bottom:36px;max-width:700px;width:100%;margin:0 auto}
+.slbl{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--primary2);margin:18px 0 10px;display:flex;align-items:center;gap:7px}
+.slbl::after{content:'';flex:1;height:1px;background:rgba(12,95,90,.14)}
+.num-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-bottom:2px}
+.num-btn{aspect-ratio:1;background:#fff;border:2px solid transparent;border-radius:10px;font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.07);transition:all .15s;display:flex;align-items:center;justify-content:center}
+.num-btn:hover{border-color:var(--accent);transform:translateY(-2px) scale(1.07)}
+.num-btn:active{transform:scale(.93)}
+.num-btn.busy{background:var(--primary);color:var(--accent);border-color:var(--primary)}
+.olist{display:flex;flex-direction:column;gap:9px}
+.ocard{background:#fff;border-radius:16px;padding:13px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 2px 9px rgba(0,0,0,.06);border-right:4px solid var(--primary2);animation:slIn .3s ease both}
+@keyframes slIn{from{opacity:0;transform:translateX(-12px)}}
+.onum{background:var(--primary);color:var(--accent);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.oinfo{flex:1;min-width:90px}
+.otitle{font-size:13px;font-weight:600;margin-bottom:2px}
+.osub{font-size:11px;color:#999}
+.oactions{display:flex;gap:6px;flex-wrap:wrap}
+.abtn{padding:7px 11px;border:none;border-radius:9px;font-size:11px;font-weight:600;cursor:pointer;transition:all .14s}
+.abtn:active{transform:scale(.93)}
+.a-recall{background:#FFF3CD;color:#856404}
+.a-sound{background:#D1ECF1;color:#0C5460}
+.a-done{background:var(--primary);color:#fff}
+.empty-o{text-align:center;padding:36px 20px;color:#ccc}
+.empty-ico{font-size:44px;margin-bottom:8px}
+
+/* ===== MODALS ===== */
+.moverlay{position:fixed;inset:0;z-index:200;background:rgba(8,26,25,.82);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:18px}
+.moverlay.open{display:flex}
+.mbox{background:var(--cream);border-radius:24px;padding:24px 20px;width:100%;max-width:390px;max-height:90vh;overflow-y:auto;animation:popUp .35s cubic-bezier(.34,1.56,.64,1) both}
+.mtitle{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--primary);margin-bottom:14px}
+.on-display{background:var(--primary);border-radius:14px;padding:12px;text-align:center;margin-bottom:16px}
+.on-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:2px}
+.on-num{font-family:'Playfair Display',serif;font-size:50px;font-weight:900;color:var(--accent);line-height:1}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.tcard{padding:15px 9px;border:2px solid rgba(12,95,90,.14);border-radius:14px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .14s;line-height:1.4}
+.tcard .ico{font-size:22px;display:block;margin-bottom:4px}
+.tcard:hover{border-color:var(--primary)}
+.tcard.sel{border-color:var(--primary);background:var(--primary);color:#fff}
+.srow{display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:14px}
+.sgrp label{display:block;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--primary2);margin-bottom:5px}
+.sgrp select,.sgrp input{width:100%;padding:11px 13px;border:2px solid rgba(12,95,90,.18);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;background:#fff;appearance:none;cursor:pointer;color:var(--dark);outline:none}
+.sgrp select:focus,.sgrp input:focus{border-color:var(--primary)}
+.mactions{display:flex;gap:9px;margin-top:6px}
+.mbtn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .14s}
+.mbtn:active{transform:scale(.96)}
+.mbtn-ok{background:var(--primary);color:#fff;box-shadow:0 3px 14px rgba(12,95,90,.28)}
+.mbtn-cn{background:rgba(0,0,0,.07);color:var(--dark)}
+.mbtn-danger{background:var(--danger);color:#fff}
+
+/* ===== ARCHIVE ===== */
+.alist{margin-top:9px;max-height:55vh;overflow-y:auto}
+.aitem{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.anum{background:var(--primary);color:var(--accent);font-family:'Playfair Display',serif;font-size:17px;font-weight:700;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ainfo{flex:1}
+.atype{font-size:12px;font-weight:600}
+.atime{font-size:10px;color:#aaa}
+
+/* ===== SETTINGS ===== */
+.settings-section{background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 9px rgba(0,0,0,.05)}
+.settings-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--primary2);margin-bottom:14px}
+.set-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.set-row label{font-size:11px;font-weight:600;color:#666;letter-spacing:.5px}
+.set-row input,.set-row select{padding:10px 12px;border:1.5px solid rgba(12,95,90,.18);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;background:#fff;color:var(--dark);outline:none;width:100%}
+.set-row input:focus,.set-row select:focus{border-color:var(--primary)}
+.color-row{display:flex;gap:10px;align-items:center}
+.color-row input[type=color]{width:44px;height:44px;border:none;border-radius:10px;cursor:pointer;padding:2px}
+.order-types-list{display:flex;flex-direction:column;gap:8px}
+.ot-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--cream);border-radius:10px;border:1.5px solid rgba(12,95,90,.1)}
+.ot-item input{flex:1;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;outline:none}
+.ot-icon-input{width:40px;text-align:center;font-size:18px;border:none;background:transparent;outline:none}
+.ot-del{background:rgba(200,41,26,.12);color:var(--danger);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:700}
+.ot-add{width:100%;padding:11px;background:rgba(12,95,90,.08);color:var(--primary);border:1.5px dashed rgba(12,95,90,.3);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.set-save{width:100%;padding:15px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px}
+.set-save:active{transform:scale(.97)}
+.preview-box{background:var(--primary);border-radius:12px;padding:14px;text-align:center;margin-bottom:12px}
+.preview-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--accent)}
+.preview-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase}
+
+/* ===== DISPLAY SCREEN ===== */
+#displayScreen{background:linear-gradient(160deg,#0A3D3A 0%,#0C4A47 40%,#081E1C 100%);min-height:100vh}
+.dtopbar{background:rgba(8,30,28,.6);border-bottom:2px solid rgba(232,200,74,.2);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;backdrop-filter:blur(10px)}
+.dbrand{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:#E8C84A;letter-spacing:1px}
+.dtag{font-size:9px;color:rgba(232,200,74,.5);letter-spacing:3px;text-transform:uppercase}
+.dclock{font-family:'Playfair Display',serif;font-size:20px;color:rgba(232,200,74,.7);font-weight:700}
+.dbody{padding:20px;flex:1;display:flex;flex-direction:column;gap:18px}
+.dslbl{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(232,200,74,.7);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.dslbl::after{content:'';flex:1;height:1px;background:rgba(232,200,74,.15)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px}
+.dcard{background:rgba(12,74,71,.6);border:1.5px solid rgba(232,200,74,.25);border-radius:20px;padding:22px 14px;text-align:center;position:relative;overflow:hidden;animation:cp .4s cubic-bezier(.34,1.56,.64,1) both;box-shadow:0 4px 20px rgba(0,0,0,.3);backdrop-filter:blur(8px)}
+.dcard::before{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(232,200,74,.08) 0%,transparent 55%);pointer-events:none}
+@keyframes cp{from{opacity:0;transform:scale(.82)}}
+.dc-ico{font-size:28px;margin-bottom:6px}
+.dc-num{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:#E8C84A;line-height:1;margin-bottom:6px;text-shadow:0 2px 12px rgba(232,200,74,.3)}
+.dc-type{font-size:12px;color:rgba(255,255,255,.75);font-weight:600}
+.dc-detail{font-size:10px;color:rgba(232,200,74,.5);margin-top:3px}
+.dc-badge{display:inline-block;background:rgba(14,122,115,.8);color:#E8C84A;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 13px;border-radius:99px;margin-top:10px;border:1px solid rgba(232,200,74,.2)}
+.dc-new .dc-badge{background:#D63B2F;color:#fff;border-color:#D63B2F;animation:pls 1.4s ease infinite}
+.dc-new{border-color:rgba(214,59,47,.5);box-shadow:0 0 20px rgba(214,59,47,.2)}
+@keyframes pls{0%,100%{box-shadow:0 0 0 0 rgba(214,59,47,.5)}50%{box-shadow:0 0 0 10px rgba(214,59,47,0)}}
+.dempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.15);text-align:center;gap:10px;padding:36px}
+.dempty-ico{font-size:64px;opacity:.3}
+.dempty h2{font-family:'Playfair Display',serif;font-size:24px;color:rgba(232,200,74,.25)}
+.dfooter{background:rgba(8,30,28,.7);border-top:1px solid rgba(232,200,74,.12);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.dfi{font-size:10px;color:rgba(255,255,255,.3)}
+.dfi span{color:rgba(232,200,74,.6);font-weight:600}
+
+/* ===== AUDIO WAVE ===== */
+.aw{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--primary);border:2px solid var(--accent);border-radius:99px;padding:7px 18px;color:var(--accent);font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px;opacity:0;pointer-events:none;z-index:9000;transition:opacity .3s;white-space:nowrap}
+.aw.show{opacity:1}
+.wbars{display:flex;align-items:flex-end;gap:2px;height:14px}
+.wb{width:3px;border-radius:99px;background:var(--accent);animation:wba .6s ease infinite alternate}
+.wb:nth-child(1){height:5px}.wb:nth-child(2){height:13px;animation-delay:.1s}.wb:nth-child(3){height:9px;animation-delay:.2s}.wb:nth-child(4){height:14px;animation-delay:.3s}.wb:nth-child(5){height:7px;animation-delay:.4s}
+@keyframes wba{to{height:3px}}
+
+/* ===== TOAST ===== */
+.twrap{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none}
+.toast{background:var(--dark);color:#fff;font-size:12px;font-weight:500;padding:10px 16px;border-radius:10px;border-left:3px solid var(--accent);white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.28);animation:tin .3s ease, tout .3s ease 2.7s forwards}
+@keyframes tin{from{opacity:0;transform:translateY(9px)}}
+@keyframes tout{to{opacity:0;transform:translateY(9px)}}
+
+/* ===== BIG NUMBER ===== */
+.big-num-overlay{position:fixed;inset:0;z-index:7000;background:linear-gradient(160deg,#071614 0%,#0C4A47 50%,#071614 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;opacity:0;pointer-events:none;transition:opacity .5s;overflow:hidden}
+.big-num-overlay::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(232,200,74,.08) 0%,transparent 70%);pointer-events:none}
+.big-num-overlay.show{opacity:1;pointer-events:all}
+.big-num-top{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px}
+.big-num-brand{font-family:'Playfair Display',serif;font-size:clamp(18px,4vw,28px);font-weight:900;color:#E8C84A;letter-spacing:3px;text-transform:uppercase;opacity:.9}
+.big-num-divider{width:40px;height:1px;background:rgba(232,200,74,.3)}
+.big-num-ready{font-size:clamp(9px,1.8vw,12px);font-weight:700;letter-spacing:5px;text-transform:uppercase;color:rgba(232,200,74,.45)}
+.big-num-number{font-family:'Playfair Display',serif;font-size:clamp(140px,32vw,240px);font-weight:900;color:#E8C84A;line-height:.9;text-shadow:0 0 100px rgba(232,200,74,.35),0 0 40px rgba(232,200,74,.2);animation:numPop .6s cubic-bezier(.34,1.56,.64,1) both;margin:10px 0 20px}
+@keyframes numPop{from{transform:scale(.4);opacity:0}}
+.big-num-texts{display:flex;flex-direction:column;align-items:center;gap:8px;border-top:1px solid rgba(232,200,74,.12);padding-top:20px;width:90%;max-width:480px}
+.big-num-fr{font-size:clamp(14px,2.8vw,20px);color:rgba(255,255,255,.88);font-weight:500;text-align:center;line-height:1.5}
+.big-num-en{font-size:clamp(11px,2vw,16px);color:rgba(232,200,74,.55);font-weight:400;text-align:center}
+.big-num-bar{width:120px;height:2px;background:rgba(232,200,74,.12);border-radius:99px;overflow:hidden;margin-top:28px}
+.big-num-bar-fill{height:100%;background:linear-gradient(90deg,#E8C84A,rgba(232,200,74,.4));border-radius:99px;transform-origin:left;animation:barShrink 30s linear forwards}
+@keyframes barShrink{to{transform:scaleX(0)}}
+
+/* ===== PIN MODALS ===== */
+.pin-modal-card{background:var(--dark);border:2px solid var(--accent);max-width:320px;border-radius:24px;padding:28px 22px;text-align:center;width:100%}
+.pin-modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--accent);margin-bottom:4px}
+.pin-modal-hint{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:18px}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(12,95,90,.22);border-radius:99px}
+@media(max-width:420px){.num-grid{gap:3px}.num-btn{font-size:10px;border-radius:7px}.dgrid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px) and (min-height:600px){.hbtn-admin{display:none !important}}
+
+/* ===== SYNC STATUS ===== */
+.fb-status{font-size:14px;cursor:default;line-height:1}
+.bsm-connect{background:linear-gradient(135deg,rgba(14,122,115,.7),rgba(12,95,90,.9));color:var(--accent);border:1px solid rgba(240,192,64,.3)}
+
+/* ===== PAIR MODAL ===== */
+.pair-box{background:var(--dark);border:2px solid rgba(240,192,64,.35);border-radius:24px;padding:28px 22px;width:100%;max-width:400px;text-align:center;backdrop-filter:blur(18px);animation:popUp .4s cubic-bezier(.34,1.56,.64,1) both}
+.pair-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--accent);margin-bottom:4px}
+.pair-sub{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:18px}
+.pair-qr{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:14px;padding:14px;margin:0 auto 14px;width:fit-content}
+.pair-url-row{display:flex;gap:8px;margin-bottom:14px}
+.pair-url-input{flex:1;padding:10px 12px;background:rgba(255,255,255,.08);border:1.5px solid rgba(240,192,64,.25);border-radius:10px;color:#fff;font-size:11px;font-family:'DM Sans',sans-serif;outline:none}
+.pair-copy-btn{padding:10px 14px;background:var(--accent);color:var(--dark);border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pair-steps{text-align:left;background:rgba(255,255,255,.05);border-radius:12px;padding:14px;margin-bottom:14px}
+.pair-step{font-size:11px;color:rgba(255,255,255,.65);margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+.pair-step-num{background:var(--accent);color:var(--dark);font-weight:700;font-size:10px;min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.pair-offline-warn{background:rgba(200,41,26,.15);border:1px solid rgba(200,41,26,.3);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,100,100,.85);margin-bottom:14px}
+
+/* ===== SYNC CONNECT SCREEN ===== */
+.sync-enter-card{background:rgba(255,255,255,.06);border:1px solid rgba(240,192,64,.2);border-radius:20px;padding:22px 18px;margin:0 auto;max-width:360px;text-align:center}
+.sync-enter-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:var(--accent);margin-bottom:8px}
+.sync-enter-input{width:100%;padding:12px;background:rgba(255,255,255,.08);border:1.5px solid rgba(240,192,64,.25);border-radius:10px;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px;text-align:center}
+.sync-enter-btn{width:100%;padding:13px;background:var(--accent);color:var(--dark);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
+
+/* ===== SYNC STATUS INDICATOR ===== */
+.sync-indicator{position:fixed;top:8px;right:8px;z-index:9998;background:rgba(8,26,25,.92);border:1px solid rgba(240,192,64,.25);border-radius:99px;padding:4px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:5px;backdrop-filter:blur(8px);transition:all .3s;pointer-events:none}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#aaa;flex-shrink:0;transition:background .4s}
+.sync-dot.firebase{background:#4CAF50}
+.sync-dot.broadcast{background:#2196F3}
+.sync-dot.local{background:#FF9800}
+.sync-dot.n8n{background:#9C27B0}
+.sync-dot.manual{background:#F44336}
+.sync-dot.offline{background:#F44336;animation:blink .8s ease infinite alternate}
+@keyframes blink{to{opacity:.2}}
+/* ===== n8n SETTINGS ===== */
+.n8n-section-note{font-size:10px;color:#999;margin-top:4px;line-height:1.5}
+
+</style>
+</head>
+<body>
+
+<div class="aw" id="aw"><div class="wbars"><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div></div><span id="awTxt">Annonce...</span></div>
+<div class="twrap" id="twrap"></div>
+<div class="sync-indicator" id="syncIndicator" style="display:none"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">...</span></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-icon" id="spIcon">🍕</div>
+  <div class="sp-name" id="spName">Restaurant</div>
+  <div class="sp-tag" id="spTag">Système de Commandes</div>
+  <div class="sp-bar"></div>
+</div>
+
+<!-- LICENSE SCREEN -->
+<div id="licenseScreen">
+  <div class="lic-card">
+    <div class="lic-icon">🔐</div>
+    <div class="lic-title">Activation Requise</div>
+    <div class="lic-sub">RestaurantQ Pro</div>
+    <input class="lic-input" id="licInput" type="text" placeholder="XXXX-XXXX-XXXX" maxlength="19">
+    <button class="lic-btn" onclick="checkLicense()">✅ Activer</button>
+    <div class="lic-err" id="licErr"></div>
+    <div class="lic-info">Contactez votre revendeur pour obtenir<br>votre clé d'activation unique.</div>
+  </div>
+</div>
+
+<!-- PIN SCREEN -->
+<div id="pinScreen">
+  <div class="pin-card">
+    <div class="pin-logo" id="pinLogo">🔐 Restaurant</div>
+    <div class="pin-hint">Code d'accès (8 chiffres)</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div><div class="pin-dot" id="pd5"></div>
+      <div class="pin-dot" id="pd6"></div><div class="pin-dot" id="pd7"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pp('1')">1</button><button class="pin-btn" onclick="pp('2')">2</button><button class="pin-btn" onclick="pp('3')">3</button>
+      <button class="pin-btn" onclick="pp('4')">4</button><button class="pin-btn" onclick="pp('5')">5</button><button class="pin-btn" onclick="pp('6')">6</button>
+      <button class="pin-btn" onclick="pp('7')">7</button><button class="pin-btn" onclick="pp('8')">8</button><button class="pin-btn" onclick="pp('9')">9</button>
+      <button class="pin-btn pin-del" onclick="pdel()">⌫</button><button class="pin-btn" onclick="pp('0')">0</button><button class="pin-btn" onclick="pclr()" style="font-size:12px">✕</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <button onclick="cancelPin()" style="margin-top:16px;width:100%;padding:12px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600">↩ Retour</button>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="home">
+  <div class="home-card">
+    <div class="home-logo-area" id="homeLogo"></div>
+    <div class="home-brand" id="homeBrand">Restaurant</div>
+    <div class="home-tag" id="homeTag">Système de Commandes</div>
+    <div class="home-btns">
+      <button class="hbtn hbtn-admin" onclick="requestAdminPin()">📱 Administration</button>
+      <button class="hbtn hbtn-display" onclick="requestDisplayPin()">📺 Affichage Client</button>
+    </div>
+    <div class="home-info" id="homeInfo"></div>
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div id="adminScreen" class="screen">
+  <div class="topbar">
+    <div class="tb-brand" id="adminBrand">RestaurantQ</div>
+    <div class="tb-right">
+      <span class="badge" id="cntBadge">0</span>
+      <span class="fb-status" id="fbStatusBadge" title="Mode local">⚫</span>
+      <button class="bsm bsm-connect" onclick="showPairModal()" title="Connecter un écran d'affichage">📡 Sync</button>
+      <button class="bsm bsm-gold" onclick="openArchive()">📦</button>
+      <button class="bsm" onclick="openSettings()">⚙️</button>
+      <button class="bsm" onclick="goHomeFromAdmin()">⬅</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="slbl">Numéro de commande</div>
+    <div class="num-grid" id="numGrid"></div>
+    <div class="slbl" style="margin-top:22px">Commandes en attente</div>
+    <div class="olist" id="oList"></div>
+  </div>
+</div>
+
+<!-- DISPLAY SCREEN -->
+<div id="displayScreen" class="screen">
+  <div class="dtopbar">
+    <div>
+      <div class="dbrand" id="displayBrand">Restaurant</div>
+      <div class="dtag" id="displayTag">Système de Commandes</div>
+    </div>
+    <div id="dclock" class="dclock"></div>
+  </div>
+  <div class="dbody" id="dbody"></div>
+  <div class="dfooter">
+    <div class="dfi" id="dFooter1"></div>
+    <div class="dfi" id="dFooter2"></div>
+    <span class="fb-status" id="fbStatusBadgeDisplay" title="Mode local" style="font-size:16px">⚫</span>
+    <button class="bsm" id="enableSoundBtnDisplay" onclick="enableSoundOnDisplay()">🔊 Son</button>
+    <button class="bsm" onclick="goHomeFromDisplay()">⬅</button>
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="moverlay" id="orderModal">
+  <div class="mbox">
+    <div class="on-display"><div class="on-lbl">Numéro de commande</div><div class="on-num" id="mNum">00</div></div>
+    <div class="tgrid" id="typeGrid"></div>
+    <div id="extraFields"></div>
+    <div class="mactions">
+      <button class="mbtn mbtn-cn" onclick="closeOM()">Annuler</button>
+      <button class="mbtn mbtn-ok" onclick="confirmOrder()">✅ Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE MODAL -->
+<div class="moverlay" id="archiveModal">
+  <div class="mbox">
+    <div class="mtitle">📦 Historique</div>
+    <div class="alist" id="aList"></div>
+    <div class="mactions" style="margin-top:12px">
+      <button class="mbtn mbtn-cn" onclick="closeArchive()">Fermer</button>
+      <button class="mbtn mbtn-danger" onclick="clearArchive()">🗑️ Vider</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PIN MODAL -->
+<div class="moverlay" id="adminPinModal">
+  <div class="pin-modal-card">
+    <div class="pin-modal-title">🔐 ADMIN</div>
+    <div class="pin-modal-hint">Code Administration (4 chiffres)</div>
+    <div class="pin-dots" id="adminPinDots" style="justify-content:center;display:flex;gap:10px;margin-bottom:16px">
+      <div class="pin-dot" id="apd0"></div><div class="pin-dot" id="apd1"></div>
+      <div class="pin-dot" id="apd2"></div><div class="pin-dot" id="apd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="adminPinPress('1')">1</button><button class="pin-btn" onclick="adminPinPress('2')">2</button><button class="pin-btn" onclick="adminPinPress('3')">3</button>
+      <button class="pin-btn" onclick="adminPinPress('4')">4</button><button class="pin-btn" onclick="adminPinPress('5')">5</button><button class="pin-btn" onclick="adminPinPress('6')">6</button>
+      <button class="pin-btn" onclick="adminPinPress('7')">7</button><button class="pin-btn" onclick="adminPinPress('8')">8</button><button class="pin-btn" onclick="adminPinPress('9')">9</button>
+      <button class="pin-btn pin-del" onclick="adminPinDel()">⌫</button><button class="pin-btn" onclick="adminPinPress('0')">0</button><button class="pin-btn" onclick="adminPinClear()" style="font-size:12px">✕</button>
+    </div>
+    <div class="pin-err" id="adminPinErr"></div>
+    <button class="mbtn mbtn-cn" style="margin-top:12px;width:100%;padding:12px;border:none;border-radius:12px;cursor:pointer;font-weight:700" onclick="closeAdminPinModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- DISPLAY PIN MODAL -->
+<div class="moverlay" id="displayPinModal">
+  <div class="pin-modal-card">
+    <div class="pin-modal-title">📺 AFFICHAGE</div>
+    <div class="pin-modal-hint">Code Affichage (4 chiffres)</div>
+    <div class="pin-dots" id="displayPinDots" style="justify-content:center;display:flex;gap:10px;margin-bottom:16px">
+      <div class="pin-dot" id="dpd0"></div><div class="pin-dot" id="dpd1"></div>
+      <div class="pin-dot" id="dpd2"></div><div class="pin-dot" id="dpd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="displayPinPress('1')">1</button><button class="pin-btn" onclick="displayPinPress('2')">2</button><button class="pin-btn" onclick="displayPinPress('3')">3</button>
+      <button class="pin-btn" onclick="displayPinPress('4')">4</button><button class="pin-btn" onclick="displayPinPress('5')">5</button><button class="pin-btn" onclick="displayPinPress('6')">6</button>
+      <button class="pin-btn" onclick="displayPinPress('7')">7</button><button class="pin-btn" onclick="displayPinPress('8')">8</button><button class="pin-btn" onclick="displayPinPress('9')">9</button>
+      <button class="pin-btn pin-del" onclick="displayPinDel()">⌫</button><button class="pin-btn" onclick="displayPinPress('0')">0</button><button class="pin-btn" onclick="displayPinClear()" style="font-size:12px">✕</button>
+    </div>
+    <div class="pin-err" id="displayPinErr"></div>
+    <button class="mbtn mbtn-cn" style="margin-top:12px;width:100%;padding:12px;border:none;border-radius:12px;cursor:pointer;font-weight:700" onclick="closeDisplayPinModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="moverlay" id="settingsModal">
+  <div class="mbox" style="max-width:460px">
+    <div class="mtitle">⚙️ Paramètres du Restaurant</div>
+
+    <!-- Preview -->
+    <div class="preview-box" id="settingsPreview">
+      <div class="preview-name" id="previewName">Restaurant</div>
+      <div class="preview-tag" id="previewTag">Système de Commandes</div>
+    </div>
+
+    <!-- Infos -->
+    <div class="settings-section">
+      <div class="settings-title">🏪 Informations</div>
+
+      <!-- Logo Upload -->
+      <div class="set-row">
+        <label>Logo du restaurant</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div id="logoPreviewBox" style="width:72px;height:72px;border-radius:14px;background:rgba(12,95,90,.1);border:2px dashed rgba(12,95,90,.3);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden">
+            <span id="logoPreviewEmoji">🍕</span>
+            <img id="logoPreviewImg" style="display:none;width:100%;height:100%;object-fit:contain">
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(12,95,90,.08);border:1.5px dashed rgba(12,95,90,.3);border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;color:#0C5F5A">
+              📁 Choisir une image (PNG/JPG)
+              <input type="file" id="logoFileInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+            </label>
+            <button onclick="removeLogo()" style="padding:8px 14px;background:rgba(200,41,26,.08);color:#C8291A;border:1px solid rgba(200,41,26,.2);border-radius:10px;font-size:11px;font-weight:600;cursor:pointer">🗑️ Supprimer le logo</button>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#999;margin-top:4px">Recommandé: image carrée, fond transparent (PNG)</div>
+      </div>
+
+      <div class="set-row"><label>Nom du restaurant</label><input id="setName" type="text" placeholder="Pizza Pocket" oninput="updatePreview()"></div>
+      <div class="set-row"><label>Slogan</label><input id="setTag" type="text" placeholder="Une Pizza À Votre Mesure"></div>
+      <div class="set-row"><label>📞 Téléphone 1</label><input id="setPhone1" type="text" placeholder="0555 00 00 00"></div>
+      <div class="set-row"><label>📞 Téléphone 2</label><input id="setPhone2" type="text" placeholder="0770 00 00 00"></div>
+      <div class="set-row"><label>Icône (emoji — utilisé si pas de logo)</label><input id="setIcon" type="text" placeholder="🍕" maxlength="4" oninput="updatePreview()"></div>
+    </div>
+
+    <!-- Couleurs -->
+    <div class="settings-section">
+      <div class="settings-title">🎨 Couleurs</div>
+      <div class="set-row"><label>Couleur principale</label>
+        <div class="color-row">
+          <input type="color" id="setColorPrimary" value="#0C5F5A" onchange="updatePreview()">
+          <input type="text" id="setColorPrimaryText" value="#0C5F5A" oninput="syncColor('Primary')" style="flex:1">
+        </div>
+      </div>
+      <div class="set-row"><label>Couleur accent (or)</label>
+        <div class="color-row">
+          <input type="color" id="setColorAccent" value="#F0C040" onchange="updatePreview()">
+          <input type="text" id="setColorAccentText" value="#F0C040" oninput="syncColor('Accent')" style="flex:1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Commandes -->
+    <div class="settings-section">
+      <div class="settings-title">🔢 Numérotation</div>
+      <div class="set-row"><label>Nombre max de commandes (10-100)</label>
+        <input id="setMaxOrders" type="number" min="10" max="100" step="10" value="100">
+      </div>
+      <div class="set-row"><label>Durée affichage grand écran (secondes)</label>
+        <input id="setDisplayDuration" type="number" min="5" max="60" value="30">
+      </div>
+    </div>
+
+    <!-- Types de commandes -->
+    <div class="settings-section">
+      <div class="settings-title">📋 Types de commandes</div>
+      <div class="order-types-list" id="orderTypesList"></div>
+      <button class="ot-add" onclick="addOrderType()">+ Ajouter un type</button>
+    </div>
+
+    <!-- Firebase -->
+    <div class="settings-section">
+      <div class="settings-title">🔥 Firebase (synchronisation)</div>
+      <div class="set-row"><label>URL Firebase Realtime Database</label>
+        <input id="setFbUrl" type="text" placeholder="https://your-app.firebaseio.com">
+      </div>
+      <div style="font-size:10px;color:#999;margin-top:4px">Laissez vide pour utiliser le mode local (même appareil uniquement)</div>
+    </div>
+
+
+    <!-- n8n Webhooks -->
+    <div class="settings-section">
+      <div class="settings-title">🔗 n8n Webhooks (Notifications)</div>
+      <div class="set-row"><label>URL du webhook n8n</label>
+        <input id="setN8nUrl" type="text" placeholder="https://your-n8n.app/webhook/xxx">
+      </div>
+      <div class="n8n-section-note">Optionnel — Recevez des notifications pour chaque commande.<br>Laissez vide pour désactiver.</div>
+    </div>
+
+    <!-- PIN -->
+    <div class="settings-section">
+      <div class="settings-title">🔐 Codes PIN</div>
+      <div class="set-row"><label>Code Admin (4 chiffres)</label><input id="setAdminPin" type="text" maxlength="4" placeholder="1234"></div>
+      <div class="set-row"><label>Code Affichage (4 chiffres)</label><input id="setDisplayPin" type="text" maxlength="4" placeholder="5678"></div>
+      <div class="set-row"><label>Code d'accès principal (8 chiffres)</label><input id="setMainPin" type="text" maxlength="8" placeholder="20302030"></div>
+    </div>
+
+    <button class="set-save" onclick="saveSettings()">💾 Enregistrer les paramètres</button>
+    <div class="mactions" style="margin-top:10px">
+      <button class="mbtn mbtn-cn" onclick="closeSettings()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAIR MODAL -->
+<div class="moverlay" id="pairModal">
+  <div class="pair-box">
+    <div class="pair-title">📡 Connecter un écran</div>
+    <div class="pair-sub">Synchronisation multi-appareils</div>
+
+    <div id="pairNoFbWarn" class="pair-offline-warn" style="display:none">
+      ⚠️ <strong>Firebase non configuré.</strong><br>
+      Allez dans ⚙️ Paramètres → Firebase et entrez l'URL de votre base de données pour activer la synchronisation entre appareils.
+    </div>
+
+    <div id="pairWithFbContent">
+      <div class="pair-steps">
+        <div class="pair-step"><div class="pair-step-num">1</div><span>Ouvrez ce fichier HTML sur l'autre appareil (TV, 2ème téléphone...)</span></div>
+        <div class="pair-step"><div class="pair-step-num">2</div><span>Scannez le QR code ou copiez le lien ci-dessous</span></div>
+        <div class="pair-step"><div class="pair-step-num">3</div><span>Sur l'autre appareil, cliquez sur le lien — Firebase sera configuré automatiquement</span></div>
+        <div class="pair-step"><div class="pair-step-num">4</div><span>Choisissez <strong>Affichage Client</strong> sur l'autre appareil</span></div>
+      </div>
+      <div class="pair-qr" id="pairQr"></div>
+      <div class="pair-url-row">
+        <input class="pair-url-input" id="pairUrlInput" readonly placeholder="Lien de synchronisation...">
+        <button class="pair-copy-btn" onclick="copyPairUrl()">📋 Copier</button>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:14px">
+        🔒 Le lien contient uniquement l'URL Firebase — vos données restent privées
+      </div>
+    </div>
+
+    <div class="pair-steps" style="margin-top:0;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(240,192,64,.6);margin-bottom:8px">📱 Même téléphone, 2 navigateurs</div>
+      <div class="pair-step"><div class="pair-step-num">✓</div><span>Synchronisation automatique via stockage local (fonctionne sans Firebase)</span></div>
+    </div>
+
+    <button class="mbtn mbtn-cn" style="width:100%;padding:12px;border:none;border-radius:12px;cursor:pointer;font-weight:700" onclick="closePairModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- BIG NUMBER -->
+<div class="big-num-overlay" id="bigNumOverlay">
+  <div class="big-num-top">
+    <div id="bigNumLogoArea"></div>
+    <div class="big-num-brand" id="bigNumBrand">Restaurant</div>
+    <div class="big-num-divider"></div>
+    <div class="big-num-ready">Votre commande est prête</div>
+  </div>
+  <div class="big-num-number" id="bigNumValue">00</div>
+  <div class="big-num-texts">
+    <div class="big-num-fr" id="bigNumFr"></div>
+    <div class="big-num-en" id="bigNumEn"></div>
+  </div>
+  <div class="big-num-bar"><div class="big-num-bar-fill" id="bigNumBar"></div></div>
+</div>
+
+<script>
+// ============= LICENCE SYSTEM =============
+// توليد مفاتيح ترخيص بتنسيق XXXX-XXXX-XXXX
+// كل مفتاح مرتبط بـ deviceId (يمنع النقل بين أجهزة مختلفة)
+const APP_VERSION = '2.0.0-pro';
+const SK_LIC = 'rq_license';
+const SK_CFG = 'rq_config';
+const SK_O = 'rq_orders';
+const SK_A = 'rq_archive';
+const SK_SND = 'rq_sound';
+const SK_SESSION = 'rq_session';
+
+// قائمة المفاتيح الصالحة (أنت تولّدها وتعطيها للزبون)
+// الصيغة: RESTO-XXXX-YYYY حيث XXXX وYYYY أرقام عشوائية
+const VALID_LICENSES = [
+  'RSTO-1234-ABCD', // مطعم 1
+  'RSTO-5678-EFGH', // مطعم 2
+  'RSTO-9012-IJKL', // مطعم 3
+  'RSTO-3456-MNOP', // مطعم 4
+  'RSTO-7890-QRST', // مطعم 5
+  'DEMO-0000-TEST', // نسخة تجريبية
+];
+
+// الإعدادات الافتراضية
+const DEFAULT_CONFIG = {
+  name: 'Restaurant',
+  tag: 'Système de Commandes',
+  icon: '🍕',
+  phone1: '',
+  phone2: '',
+  colorPrimary: '#0C5F5A',
+  colorAccent: '#F0C040',
+  maxOrders: 100,
+  displayDuration: 30,
+  adminPin: '1234',
+  displayPin: '5678',
+  mainPin: '20302030',
+  fbUrl: '',
+  n8nUrl: '',
+  orderTypes: [
+    { id: 'table', icon: '🍽️', label: 'Table', hasNumber: true, max: 20 },
+    { id: 'chaise', icon: '🪑', label: 'Chaise', hasNumber: true, max: 10 },
+    { id: 'emporter', icon: '🛍️', label: 'À emporter', hasNumber: false },
+    { id: 'livraison', icon: '🛵', label: 'Livraison', hasNumber: false }
+  ]
+};
+
+let config = { ...DEFAULT_CONFIG };
+let orders = [];
+let archive = [];
+let curNum = null;
+let curType = null;
+let newSet = new Set();
+let dispInt = null;
+let clkInt = null;
+let currentMode = null;
+let soundEnabled = false;
+let audioContext = null;
+let fbPollInt = null;
+let fbLastOrdersHash = '';
+let fbLastSoundTs = 0;
+let pinBuf = '';
+let adminPinBuf = '';
+let displayPinBuf = '';
+
+// FIX: track localPolling interval to prevent memory leak
+let localPollInt = null;
+
+// Advanced Fallback System state
+const SYNC_CHANNELS = { FIREBASE: 'firebase', BROADCAST: 'broadcast', LOCAL: 'local', N8N: 'n8n', MANUAL: 'manual' };
+let currentSyncChannel = SYNC_CHANNELS.LOCAL;
+let healthCheckInt = null;
+let fbRetryCount = 0;
+const FB_MAX_RETRIES = 5;
+let fbConsecutiveFails = 0;
+let isOnline = navigator.onLine;
+let manualModeActive = false;
+
+let channel = null;
+let broadcastAvailable = false;
+try {
+  channel = new BroadcastChannel('rq_channel');
+  broadcastAvailable = true;
+  channel.onmessage = (e) => {
+    if (e.data.type === 'orders_updated') {
+      loadOrders();
+      if (currentMode === 'admin') renderAdmin();
+      if (currentMode === 'display') renderDisplay();
+      // If we get broadcast messages, we know it's working
+      if (currentSyncChannel === SYNC_CHANNELS.LOCAL && !config.fbUrl) {
+        setSyncChannel(SYNC_CHANNELS.BROADCAST);
+      }
+    }
+    if (e.data.type === 'sound_trigger' && currentMode === 'display') {
+      announceOrder(e.data.orderNum);
+    }
+  };
+  channel.onerror = () => { broadcastAvailable = false; };
+} catch(e) {
+  broadcastAvailable = false;
+  console.warn('[BroadcastChannel] Not available:', e);
+}
+
+// ============= LOCAL POLLING (cross-browser, same device) =============
+let localPollLastOrdersHash = '';
+let localPollLastSndTs = 0;
+
+function startLocalPolling() {
+  // FIX: prevent memory leak by checking if interval already running
+  if (localPollInt) return;
+  localPollInt = setInterval(() => {
+    // Sync orders (works across all browsers on same device)
+    try {
+      const raw = localStorage.getItem(SK_O) || '[]';
+      if (raw !== localPollLastOrdersHash) {
+        localPollLastOrdersHash = raw;
+        loadOrders();
+        if (currentMode === 'admin') renderAdmin();
+        if (currentMode === 'display') renderDisplay();
+      }
+    } catch(e) { console.warn('[LocalPoll] Orders error:', e); }
+    // Sound trigger cross-browser
+    if (currentMode === 'display') {
+      try {
+        const sndRaw = localStorage.getItem(SK_SND);
+        if (sndRaw) {
+          const s = JSON.parse(sndRaw);
+          if (s && s.ts > localPollLastSndTs && (Date.now() - s.ts) < 15000) {
+            localPollLastSndTs = s.ts;
+            // Only announce if Firebase is not handling it (or Firebase is offline)
+            if (!config.fbUrl || fbConsecutiveFails > 2) announceOrder(s.n);
+          }
+        }
+      } catch(e) {}
+    }
+  }, 700);
+  setSyncChannel(SYNC_CHANNELS.LOCAL);
+}
+
+function stopLocalPolling() {
+  if (localPollInt) clearInterval(localPollInt);
+  localPollInt = null;
+}
+
+// ============= LICENCE =============
+function getDeviceId() {
+  let id = localStorage.getItem('rq_device_id');
+  if (!id) {
+    id = 'DEV-' + Math.random().toString(36).substr(2,9).toUpperCase();
+    localStorage.setItem('rq_device_id', id);
+  }
+  return id;
+}
+
+function checkLicense() {
+  const key = document.getElementById('licInput').value.trim().toUpperCase();
+  const stored = localStorage.getItem(SK_LIC);
+
+  // تحقق من المفاتيح الصالحة
+  if (VALID_LICENSES.includes(key)) {
+    localStorage.setItem(SK_LIC, key);
+    document.getElementById('licenseScreen').classList.remove('active');
+    initApp();
+  } else {
+    document.getElementById('licErr').textContent = '❌ Clé invalide — Contactez votre revendeur';
+    document.getElementById('licInput').style.borderColor = '#C8291A';
+    setTimeout(() => {
+      document.getElementById('licErr').textContent = '';
+      document.getElementById('licInput').style.borderColor = '';
+    }, 3000);
+  }
+}
+
+function formatLicenseInput(e) {
+  let val = e.target.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  if (val.length > 4) val = val.substr(0,4) + '-' + val.substr(4);
+  if (val.length > 9) val = val.substr(0,9) + '-' + val.substr(9);
+  e.target.value = val.substr(0,14);
+}
+
+document.getElementById('licInput').addEventListener('input', formatLicenseInput);
+
+// ============= CONFIG =============
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem(SK_CFG);
+    if (saved) config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+    // Ensure orderTypes is always an array
+    if (!Array.isArray(config.orderTypes)) config.orderTypes = DEFAULT_CONFIG.orderTypes;
+  } catch(e) {
+    console.error('[Config] Load error:', e);
+    config = { ...DEFAULT_CONFIG };
+  }
+}
+
+function saveConfig() {
+  localStorage.setItem(SK_CFG, JSON.stringify(config));
+}
+
+function applyConfig() {
+  // تطبيق الألوان
+  document.documentElement.style.setProperty('--primary', config.colorPrimary);
+  document.documentElement.style.setProperty('--primary2', adjustColor(config.colorPrimary, 20));
+  document.documentElement.style.setProperty('--accent', config.colorAccent);
+
+  // تطبيق النصوص
+  const name = config.name || 'Restaurant';
+  document.getElementById('spName').textContent = name;
+  document.getElementById('spIcon').textContent = config.icon || '🍕';
+  document.getElementById('spTag').textContent = config.tag || '';
+  document.getElementById('pinLogo').textContent = '🔐 ' + name;
+  document.getElementById('homeBrand').textContent = name;
+  document.getElementById('homeTag').textContent = config.tag || '';
+  document.getElementById('adminBrand').textContent = name;
+  document.getElementById('displayBrand').textContent = name;
+  document.getElementById('displayTag').textContent = config.tag || '';
+  document.getElementById('bigNumBrand').textContent = name;
+
+  // معلومات الاتصال
+  const homeInfo = [config.phone1, config.phone2].filter(Boolean).map(p => '📞 ' + p).join(' — ');
+  document.getElementById('homeInfo').textContent = homeInfo;
+  document.getElementById('dFooter1').innerHTML = config.phone1 ? '📞 <span>' + config.phone1 + '</span>' : '';
+  document.getElementById('dFooter2').innerHTML = config.phone2 ? '📞 <span>' + config.phone2 + '</span>' : '';
+
+  applyLogo();
+  // Firebase
+  if (config.fbUrl) startFbPolling();
+  else setFbStatus('local');
+}
+
+function adjustColor(hex, amount) {
+  try {
+    const r = Math.min(255, parseInt(hex.slice(1,3),16) + amount);
+    const g = Math.min(255, parseInt(hex.slice(3,5),16) + amount);
+    const b = Math.min(255, parseInt(hex.slice(5,7),16) + amount);
+    return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+  } catch(e) { return hex; }
+}
+
+// ============= SETTINGS =============
+function openSettings() {
+  // تعبئة الحقول
+  document.getElementById('setName').value = config.name || '';
+  document.getElementById('setTag').value = config.tag || '';
+  document.getElementById('setPhone1').value = config.phone1 || '';
+  document.getElementById('setPhone2').value = config.phone2 || '';
+  document.getElementById('setIcon').value = config.icon || '🍕';
+  document.getElementById('setColorPrimary').value = config.colorPrimary || '#0C5F5A';
+  document.getElementById('setColorPrimaryText').value = config.colorPrimary || '#0C5F5A';
+  document.getElementById('setColorAccent').value = config.colorAccent || '#F0C040';
+  document.getElementById('setColorAccentText').value = config.colorAccent || '#F0C040';
+  document.getElementById('setMaxOrders').value = config.maxOrders || 100;
+  document.getElementById('setDisplayDuration').value = config.displayDuration || 30;
+  document.getElementById('setAdminPin').value = config.adminPin || '1234';
+  document.getElementById('setDisplayPin').value = config.displayPin || '5678';
+  document.getElementById('setMainPin').value = config.mainPin || '20302030';
+  document.getElementById('setFbUrl').value = config.fbUrl || '';
+  const n8nEl = document.getElementById('setN8nUrl'); if (n8nEl) n8nEl.value = config.n8nUrl || '';
+
+  renderOrderTypesList();
+  updatePreview();
+  updateLogoPreview();
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function updatePreview() {
+  const name = document.getElementById('setName').value || 'Restaurant';
+  const tag = document.getElementById('setTag').value || '';
+  document.getElementById('previewName').textContent = name;
+  document.getElementById('previewTag').textContent = tag;
+  const pc = document.getElementById('setColorPrimary').value;
+  const ac = document.getElementById('setColorAccent').value;
+  document.getElementById('settingsPreview').style.background = pc;
+  document.getElementById('previewName').style.color = ac;
+}
+
+function syncColor(which) {
+  const text = document.getElementById('setColor' + which + 'Text').value;
+  if (/^#[0-9A-Fa-f]{6}$/.test(text)) {
+    document.getElementById('setColor' + which).value = text;
+    updatePreview();
+  }
+}
+
+function renderOrderTypesList() {
+  const list = document.getElementById('orderTypesList');
+  const types = config.orderTypes || [];
+  list.innerHTML = types.map((t, i) => `
+    <div class="ot-item">
+      <input class="ot-icon-input" value="${t.icon}" onchange="updateOTField(${i},'icon',this.value)" maxlength="4">
+      <input value="${t.label}" onchange="updateOTField(${i},'label',this.value)" placeholder="Nom du type" style="flex:2">
+      <select onchange="updateOTField(${i},'hasNumber',this.value==='true')" style="width:90px;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:11px">
+        <option value="false" ${!t.hasNumber?'selected':''}>Sans N°</option>
+        <option value="true" ${t.hasNumber?'selected':''}>Avec N°</option>
+      </select>
+      ${t.hasNumber ? `<input type="number" value="${t.max||10}" onchange="updateOTField(${i},'max',parseInt(this.value))" style="width:60px;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:11px" min="1" max="100" title="Max">` : '<div style="width:60px"></div>'}
+      <button class="ot-del" onclick="removeOrderType(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function updateOTField(i, field, value) {
+  if (!config.orderTypes[i]) return;
+  config.orderTypes[i][field] = value;
+}
+
+function addOrderType() {
+  config.orderTypes.push({ id: 'type_' + Date.now(), icon: '🍴', label: 'Nouveau', hasNumber: false });
+  renderOrderTypesList();
+}
+
+function removeOrderType(i) {
+  config.orderTypes.splice(i, 1);
+  renderOrderTypesList();
+}
+
+function saveSettings() {
+  config.name = document.getElementById('setName').value.trim() || 'Restaurant';
+  config.tag = document.getElementById('setTag').value.trim();
+  config.phone1 = document.getElementById('setPhone1').value.trim();
+  config.phone2 = document.getElementById('setPhone2').value.trim();
+  config.icon = document.getElementById('setIcon').value.trim() || '🍕';
+  config.colorPrimary = document.getElementById('setColorPrimary').value;
+  config.colorAccent = document.getElementById('setColorAccent').value;
+  config.maxOrders = parseInt(document.getElementById('setMaxOrders').value) || 100;
+  config.displayDuration = parseInt(document.getElementById('setDisplayDuration').value) || 30;
+  config.adminPin = document.getElementById('setAdminPin').value || '1234';
+  config.displayPin = document.getElementById('setDisplayPin').value || '5678';
+  config.mainPin = document.getElementById('setMainPin').value || '20302030';
+  config.fbUrl = document.getElementById('setFbUrl').value.trim().replace(/\/+$/,'');
+  config.n8nUrl = document.getElementById('setN8nUrl').value.trim();
+
+  saveConfig();
+  applyConfig();
+  setFbStatus(config.fbUrl ? 'connecting' : 'local');
+  if (config.fbUrl) {
+    fbSave('state/config', config);
+    startFbPolling();
+  } else {
+    stopFbPolling();
+  }
+  closeSettings();
+  toast('✅ Paramètres enregistrés');
+}
+
+// ============= FIREBASE STATUS =============
+function setFbStatus(status) {
+  // status: 'offline' | 'connecting' | 'online'
+  const icons = { offline: '🔴', connecting: '🟡', online: '🟢', local: '⚫' };
+  const labels = { offline: 'Firebase hors ligne', connecting: 'Connexion...', online: 'Firebase connecté', local: 'Mode local (même appareil)' };
+  const s = config.fbUrl ? status : 'local';
+  ['fbStatusBadge','fbStatusBadgeDisplay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = icons[s] || '⚫'; el.title = labels[s] || ''; }
+  });
+}
+
+// ============= FIREBASE =============
+async function fbSave(path, data) {
+  if (!config.fbUrl) return;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(`${config.fbUrl}/${path}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!response.ok) {
+      console.warn('[Firebase] SAVE failed:', response.status);
+      fbConsecutiveFails++;
+      setFbStatus('offline');
+    } else {
+      fbConsecutiveFails = 0;
+      setFbStatus('online');
+      setSyncChannel(SYNC_CHANNELS.FIREBASE);
+    }
+  } catch(e) {
+    fbConsecutiveFails++;
+    if (e.name !== 'AbortError') console.warn('[Firebase] Save error:', e);
+    setFbStatus('offline');
+  }
+}
+async function fbGet(path) {
+  if (!config.fbUrl) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    const r = await fetch(`${config.fbUrl}/${path}.json`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!r.ok) {
+      console.warn('[Firebase] GET failed:', r.status);
+      fbConsecutiveFails++;
+      setFbStatus('offline');
+      if (fbConsecutiveFails >= 3) setSyncChannel(SYNC_CHANNELS.LOCAL);
+      return null;
+    }
+    fbConsecutiveFails = 0;
+    setFbStatus('online');
+    setSyncChannel(SYNC_CHANNELS.FIREBASE);
+    return await r.json();
+  } catch(e) {
+    fbConsecutiveFails++;
+    if (e.name !== 'AbortError') console.warn('[Firebase] Error:', e);
+    setFbStatus('offline');
+    if (fbConsecutiveFails >= 3) setSyncChannel(SYNC_CHANNELS.LOCAL);
+    return null;
+  }
+}
+
+function startFbPolling() {
+  if (fbPollInt) clearInterval(fbPollInt);
+  if (!config.fbUrl) { setFbStatus('local'); return; }
+  setFbStatus('connecting');
+  fbPollInt = setInterval(async () => {
+    try {
+      const data = await fbGet('state');
+      if (!data) {
+        // Firebase failed — ensure local polling is running as fallback
+        if (!localPollInt) startLocalPolling();
+        return;
+      }
+      const newHash = JSON.stringify(data.orders || []);
+      if (newHash !== fbLastOrdersHash) {
+        fbLastOrdersHash = newHash;
+        orders = data.orders || [];
+        try { localStorage.setItem(SK_O, JSON.stringify(orders)); } catch(e) {}
+        localPollLastOrdersHash = JSON.stringify(orders);
+        if (currentMode === 'admin') renderAdmin();
+        if (currentMode === 'display') renderDisplay();
+      }
+      if (data.archive) {
+        archive = data.archive;
+        try { localStorage.setItem(SK_A, JSON.stringify(archive)); } catch(e) {}
+      }
+      // Sync config to display (branding, settings)
+      if (currentMode === 'display' && data.config) {
+        try {
+          const remoteConf = data.config;
+          // Only apply non-sensitive config (no pins, no fbUrl)
+          const { adminPin, displayPin, mainPin, fbUrl, n8nUrl, ...safeConf } = remoteConf;
+          config = { ...config, ...safeConf };
+          if (!Array.isArray(config.orderTypes)) config.orderTypes = DEFAULT_CONFIG.orderTypes;
+          applyConfig();
+        } catch(e) {}
+      }
+      if (currentMode === 'display' && data.sound && data.sound.ts > fbLastSoundTs && (Date.now() - data.sound.ts) < 15000) {
+        fbLastSoundTs = data.sound.ts;
+        localPollLastSndTs = data.sound.ts;
+        announceOrder(data.sound.n);
+      }
+    } catch(e) {
+      console.warn('[FbPolling] Error:', e);
+    }
+  }, 1000);
+}
+
+function stopFbPolling() { if (fbPollInt) clearInterval(fbPollInt); fbPollInt = null; }
+
+// ============= DATA =============
+function broadcastUpdate(type, data = null) {
+  if (channel && broadcastAvailable) {
+    try {
+      channel.postMessage({ type, data, timestamp: Date.now() });
+      if (!config.fbUrl) setSyncChannel(SYNC_CHANNELS.BROADCAST);
+    } catch(e) {
+      broadcastAvailable = false;
+      console.warn('[BroadcastChannel] Send error:', e);
+    }
+  }
+}
+
+async function saveOrders() {
+  localStorage.setItem(SK_O, JSON.stringify(orders));
+  fbLastOrdersHash = JSON.stringify(orders);
+  localPollLastOrdersHash = JSON.stringify(orders);
+  broadcastUpdate('orders_updated');
+  await fbSave('state/orders', orders);
+  // Also push config so display devices get branding
+  if (config.fbUrl) await fbSave('state/config', config);
+}
+
+async function saveArchive() {
+  localStorage.setItem(SK_A, JSON.stringify(archive));
+  await fbSave('state/archive', archive);
+}
+
+async function saveAll() { await saveOrders(); await saveArchive(); }
+
+function loadOrders() {
+  try { const s = localStorage.getItem(SK_O); orders = s ? JSON.parse(s) : []; } catch(e) { orders = []; }
+}
+
+function loadArchive() {
+  try { const s = localStorage.getItem(SK_A); archive = s ? JSON.parse(s) : []; } catch(e) { archive = []; }
+}
+
+async function syncFromFirebase() {
+  if (!config.fbUrl) return;
+  try {
+    const data = await fbGet('state');
+    if (data) {
+      if (data.orders) {
+        orders = data.orders;
+        try { localStorage.setItem(SK_O, JSON.stringify(orders)); } catch(e) {}
+        fbLastOrdersHash = JSON.stringify(orders);
+      }
+      if (data.archive) {
+        archive = data.archive;
+        try { localStorage.setItem(SK_A, JSON.stringify(archive)); } catch(e) {}
+      }
+      if (data.sound && data.sound.ts) fbLastSoundTs = data.sound.ts;
+    }
+  } catch(e) {
+    console.warn('[syncFromFirebase] Error:', e);
+    // Non-critical — local data will be used
+  }
+}
+
+window.addEventListener('storage', function(e) {
+  if (e.key === SK_O) { loadOrders(); if (currentMode === 'admin') renderAdmin(); if (currentMode === 'display') renderDisplay(); }
+  if (e.key === 'rq_recall' && currentMode === 'display') {
+    // Handle visual recall from cross-browser polling
+    try {
+      const recall = JSON.parse(e.newValue);
+      if (recall && recall.ts && (Date.now() - recall.ts) < 5000) renderDisplay();
+    } catch(e2) {}
+  }
+});
+
+// Online/offline event handling
+window.addEventListener('online', function() {
+  isOnline = true;
+  console.log('[Network] Back online');
+  if (config.fbUrl && fbConsecutiveFails >= 3) {
+    fbConsecutiveFails = 0;
+    setFbStatus('connecting');
+    startFbPolling();
+    toast('🌐 Reconnecté — Firebase sync repris');
+  }
+});
+
+window.addEventListener('offline', function() {
+  isOnline = false;
+  console.log('[Network] Gone offline');
+  setFbStatus('offline');
+  setSyncChannel(SYNC_CHANNELS.LOCAL);
+  // Local polling continues working offline
+  if (!localPollInt) startLocalPolling();
+  if (currentMode === 'admin' || currentMode === 'display') {
+    toast('📵 Mode hors ligne — Synchronisation locale active');
+  }
+});
+
+// ============= SESSION =============
+function saveSession(mode) { localStorage.setItem(SK_SESSION, JSON.stringify({ mode, expires: Date.now() + 86400000 })); currentMode = mode; }
+function checkSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SK_SESSION));
+    if (s && s.expires > Date.now()) {
+      if (s.mode === 'admin') { goToAdmin(true); return true; }
+      if (s.mode === 'display') { goToDisplay(true); return true; }
+    }
+  } catch(e) {}
+  return false;
+}
+function clearSession() { localStorage.removeItem(SK_SESSION); currentMode = null; }
+
+// ============= PIN =============
+function pp(d) { if(pinBuf.length>=8)return; pinBuf+=d; updatePinDots(); if(pinBuf.length===8)setTimeout(checkUnifiedPin,80); }
+function pdel() { pinBuf=pinBuf.slice(0,-1); updatePinDots(); }
+function pclr() { pinBuf=''; updatePinDots(); }
+function updatePinDots() { for(let i=0;i<8;i++){ const d=document.getElementById('pd'+i); if(d) d.classList.toggle('filled',i<pinBuf.length); } document.getElementById('pinErr').textContent=''; }
+function checkUnifiedPin() {
+  if(pinBuf===config.mainPin){ document.getElementById('pinScreen').classList.remove('active'); showHome(); }
+  else { for(let i=0;i<8;i++){ const d=document.getElementById('pd'+i); if(d) d.classList.add('error'); } document.getElementById('pinErr').textContent='Code incorrect'; setTimeout(()=>{pinBuf='';updatePinDots();},900); }
+}
+function cancelPin() {
+  pinBuf = '';
+  updatePinDots();
+  document.getElementById('pinScreen').classList.remove('active');
+  // FIX: go to home screen if license is valid, otherwise go to license screen
+  const lic = localStorage.getItem(SK_LIC);
+  if (lic && VALID_LICENSES.includes(lic)) {
+    document.getElementById('home').classList.add('show');
+  } else {
+    document.getElementById('licenseScreen').classList.add('active');
+  }
+}
+function requestAdminPin(){ adminPinBuf=''; updateAdminPinDots(); document.getElementById('adminPinErr').textContent=''; document.getElementById('adminPinModal').classList.add('open'); }
+function adminPinPress(d){ if(adminPinBuf.length>=4)return; adminPinBuf+=d; updateAdminPinDots(); if(adminPinBuf.length===4)setTimeout(checkAdminPin,80); }
+function adminPinDel(){adminPinBuf=adminPinBuf.slice(0,-1);updateAdminPinDots();}
+function adminPinClear(){adminPinBuf='';updateAdminPinDots();}
+function updateAdminPinDots(){ for(let i=0;i<4;i++){ const d=document.getElementById('apd'+i); if(d) d.classList.toggle('filled',i<adminPinBuf.length); } document.getElementById('adminPinErr').textContent=''; }
+function checkAdminPin(){ if(adminPinBuf===config.adminPin){ closeAdminPinModal(); saveSession('admin'); goToAdmin(true); } else { for(let i=0;i<4;i++){ const d=document.getElementById('apd'+i); if(d) d.classList.add('error'); } document.getElementById('adminPinErr').textContent='Code incorrect'; setTimeout(()=>{adminPinBuf='';updateAdminPinDots();},900); } }
+function closeAdminPinModal(){ document.getElementById('adminPinModal').classList.remove('open'); adminPinBuf=''; }
+function requestDisplayPin(){ displayPinBuf=''; updateDisplayPinDots(); document.getElementById('displayPinErr').textContent=''; document.getElementById('displayPinModal').classList.add('open'); }
+function displayPinPress(d){ if(displayPinBuf.length>=4)return; displayPinBuf+=d; updateDisplayPinDots(); if(displayPinBuf.length===4)setTimeout(checkDisplayPin,80); }
+function displayPinDel(){displayPinBuf=displayPinBuf.slice(0,-1);updateDisplayPinDots();}
+function displayPinClear(){displayPinBuf='';updateDisplayPinDots();}
+function updateDisplayPinDots(){ for(let i=0;i<4;i++){ const d=document.getElementById('dpd'+i); if(d) d.classList.toggle('filled',i<displayPinBuf.length); } document.getElementById('displayPinErr').textContent=''; }
+function checkDisplayPin(){ if(displayPinBuf===config.displayPin){ closeDisplayPinModal(); saveSession('display'); goToDisplay(true); } else { for(let i=0;i<4;i++){ const d=document.getElementById('dpd'+i); if(d) d.classList.add('error'); } document.getElementById('displayPinErr').textContent='Code incorrect'; setTimeout(()=>{displayPinBuf='';updateDisplayPinDots();},900); } }
+function closeDisplayPinModal(){ document.getElementById('displayPinModal').classList.remove('open'); displayPinBuf=''; }
+
+// ============= NAVIGATION =============
+function showHome() { clearSession(); currentMode = null; document.getElementById('home').classList.add('show'); document.getElementById('adminScreen').classList.remove('active'); document.getElementById('displayScreen').classList.remove('active'); stopAll(); stopHealthCheck(); hideSyncIndicator(); }
+function goHomeFromAdmin(){ showHome(); }
+function goHomeFromDisplay(){ showHome(); }
+
+async function goToAdmin(skipLoad=false) {
+  currentMode = 'admin'; // FIX: always set currentMode
+  document.getElementById('home').classList.remove('show');
+  document.getElementById('adminScreen').classList.add('active');
+  document.getElementById('displayScreen').classList.remove('active');
+  stopAll();
+  loadOrders(); loadArchive();
+  await syncFromFirebase();
+  renderAdmin();
+  startFbPolling();
+  startHealthCheck();
+  showSyncIndicator();
+}
+
+async function goToDisplay(skipLoad=false) {
+  currentMode = 'display'; // FIX: always set currentMode
+  document.getElementById('home').classList.remove('show');
+  document.getElementById('adminScreen').classList.remove('active');
+  document.getElementById('displayScreen').classList.add('active');
+  soundEnabled = false;
+  startHealthCheck();
+  showSyncIndicator();
+  showSoundActivationScreen();
+}
+
+function stopAll() {
+  if (dispInt) clearInterval(dispInt);
+  if (clkInt) clearInterval(clkInt);
+  dispInt = null; clkInt = null;
+  stopFbPolling();
+  // Note: we do NOT stop localPolling or healthCheck here
+  // They should keep running for sync continuity
+}
+
+// ============= SOUND ACTIVATION =============
+function showSoundActivationScreen() {
+  let overlay = document.getElementById('soundActivationOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'soundActivationOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:8000;background:linear-gradient(145deg,#081A19,#0C5F5A);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;';
+    overlay.innerHTML = `
+      <div style="font-size:56px" id="saIcon">🔊</div>
+      <div style="font-family:Playfair Display,serif;font-size:26px;font-weight:900;color:#F0C040;text-align:center" id="saName">Écran d'affichage</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:14px;text-align:center;max-width:280px;line-height:1.8">Appuyez pour activer le son<br>et démarrer l'affichage</div>
+      <button onclick="activateSoundAndStart()" style="margin-top:10px;padding:18px 44px;background:#F0C040;color:#081A19;border:none;border-radius:16px;font-size:17px;font-weight:700;cursor:pointer">▶ Activer et démarrer</button>
+      <div style="color:rgba(255,255,255,0.25);font-size:10px;text-align:center">Requis par le navigateur pour activer le son</div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('saName').textContent = config.name || 'Écran d\'affichage';
+  document.getElementById('saIcon').textContent = config.icon || '🔊';
+  overlay.style.display = 'flex';
+}
+
+async function activateSoundAndStart() {
+  const overlay = document.getElementById('soundActivationOverlay');
+  try {
+    const ctx = getAudioContext();
+    await ctx.resume();
+    const synth = window.speechSynthesis;
+    if (synth) { const u = new SpeechSynthesisUtterance(''); u.volume=0; synth.speak(u); }
+  } catch(e) {}
+  soundEnabled = true;
+  if (overlay) overlay.style.display = 'none';
+  const btn = document.getElementById('enableSoundBtnDisplay');
+  if (btn) { btn.textContent = '🔊 Son ON'; btn.style.background = 'rgba(14,122,115,0.9)'; }
+  loadOrders(); loadArchive();
+  await syncFromFirebase();
+  renderDisplay();
+  startClk();
+  startFbPolling();
+}
+
+function enableSoundOnDisplay() {
+  if (currentMode !== 'display') return;
+  showSoundActivationScreen();
+}
+
+function startClk() {
+  const el = document.getElementById('dclock');
+  const update = () => { if(el) el.textContent = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); };
+  update();
+  if(clkInt) clearInterval(clkInt);
+  clkInt = setInterval(update, 1000);
+}
+
+// ============= RENDER =============
+function renderAdmin() {
+  const max = config.maxOrders || 100;
+  const g = document.getElementById('numGrid');
+  g.innerHTML = '';
+  for(let i=0;i<max;i++){
+    const lbl = String(i).padStart(2,'0');
+    const b = document.createElement('button');
+    b.className = 'num-btn' + (orders.find(o=>o.number===lbl)?' busy':'');
+    b.textContent = lbl;
+    b.onclick = () => openOM(lbl);
+    g.appendChild(b);
+  }
+  document.getElementById('cntBadge').textContent = orders.length;
+  const l = document.getElementById('oList');
+  if(!orders.length){ l.innerHTML='<div class="empty-o"><div class="empty-ico">' + (config.icon||'🍕') + '</div><p>Aucune commande en attente</p></div>'; return; }
+  l.innerHTML = orders.map(o => `
+    <div class="ocard">
+      <div class="onum">${o.number}</div>
+      <div class="oinfo">
+        <div class="otitle">${getTypeIcon(o.type)} ${getTypeLabel(o)}</div>
+        <div class="osub">${formatTime(o.time)}</div>
+      </div>
+      <div class="oactions">
+        <button class="abtn a-recall" onclick="recall('${o.number}',false)">📣 Rappel</button>
+        <button class="abtn a-sound" onclick="recall('${o.number}',true)">🔊 Son</button>
+        <button class="abtn a-done" onclick="completeOrder('${o.number}')">✅ Terminé</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderDisplay() {
+  const b = document.getElementById('dbody');
+  if(!b) return;
+  if(!orders.length){ b.innerHTML='<div class="dempty"><div class="dempty-ico">' + (config.icon||'🍕') + '</div><h2>Aucune commande prête</h2><p>Les commandes apparaîtront ici</p></div>'; return; }
+  b.innerHTML = `<div><div class="dslbl">Commandes Prêtes</div><div class="dgrid">${orders.map((o,i)=>`<div class="dcard${newSet.has(o.number)?' dc-new':''}" style="animation-delay:${i*.055}s"><div class="dc-ico">${getTypeIcon(o.type)}</div><div class="dc-num">${o.number}</div><div class="dc-type">${getDisplayTypeLabel(o.type)}</div>${o.type==='table'?`<div class="dc-detail">Table N° ${o.table}</div>`:''}${o.type==='chaise'?`<div class="dc-detail">Chaise N° ${o.chaise}</div>`:''}<div class="dc-badge">${newSet.has(o.number)?'🔔 Prêt !':'Prêt'}</div></div>`).join('')}</div></div>`;
+}
+
+// ============= ORDER MODAL =============
+function openOM(num) {
+  if(orders.find(o=>o.number===num)){ toast('Commande '+num+' déjà en cours'); return; }
+  curNum=num; curType=null;
+  document.getElementById('mNum').textContent=num;
+
+  // توليد أزرار أنواع الطلبيات ديناميكياً
+  const typeGrid = document.getElementById('typeGrid');
+  typeGrid.innerHTML = config.orderTypes.map(t =>
+    `<div class="tcard" id="tc-${t.id}" onclick="selType('${t.id}')"><span class="ico">${t.icon}</span>${t.label}</div>`
+  ).join('');
+
+  document.getElementById('extraFields').innerHTML = '';
+  document.getElementById('orderModal').classList.add('open');
+}
+
+function closeOM() { document.getElementById('orderModal').classList.remove('open'); curNum=null; curType=null; }
+
+function selType(id) {
+  curType=id;
+  document.querySelectorAll('.tcard').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('tc-'+id)?.classList.add('sel');
+
+  const t = config.orderTypes.find(x=>x.id===id);
+  const extra = document.getElementById('extraFields');
+  if(t && t.hasNumber) {
+    let options = '';
+    for(let i=1;i<=(t.max||10);i++) options += `<option value="${i}">${i}</option>`;
+    extra.innerHTML = `<div class="srow"><div class="sgrp"><label>${t.label} N°</label><select id="extraSelect">${options}</select></div></div>`;
+  } else {
+    extra.innerHTML = '';
+  }
+}
+
+function confirmOrder() {
+  if(!curType){ toast('Choisissez le type'); return; }
+  const t = config.orderTypes.find(x=>x.id===curType);
+  let extraVal = null;
+  let table = null;
+  let chaise = null;
+  if(t && t.hasNumber) {
+    extraVal = document.getElementById('extraSelect')?.value;
+    if(!extraVal){ toast('Faites une sélection'); return; }
+    // تخزين في الحقل المناسب حسب النوع
+    if(t.id === 'table') table = extraVal;
+    else if(t.id === 'chaise') chaise = extraVal;
+  }
+  const o = { number:curNum, type:curType, extraVal, table, chaise, time:new Date().toISOString() };
+  orders.push(o);
+  newSet.add(curNum);
+  setTimeout(()=>newSet.delete(curNum), 12000);
+  saveAll();
+  triggerSound(curNum);
+  renderAdmin();
+  if (currentMode === 'display') renderDisplay();
+  closeOM();
+  toast('✅ Commande '+curNum+' confirmée');
+  n8nSend('orderCreated', { orderNumber: curNum, type: curType });
+}
+
+function recall(n, playSound) {
+  if (playSound) {
+    // FIX: trigger sound AND broadcast so display screen responds
+    triggerSound(n);
+    broadcastUpdate('sound_trigger', { orderNum: n });
+    toast('🔊 Son envoyé à l\'écran');
+    n8nSend('orderRecall', { orderNumber: n, mode: 'sound' });
+  } else {
+    // FIX: visual recall — broadcast update so display refreshes and mark recall in localStorage
+    broadcastUpdate('orders_updated');
+    try {
+      localStorage.setItem('rq_recall', JSON.stringify({ n, ts: Date.now() }));
+    } catch(e) {}
+    toast('📣 Commande ' + n + ' rappelée');
+    n8nSend('orderRecall', { orderNumber: n, mode: 'visual' });
+  }
+}
+
+function completeOrder(n) {
+  const i=orders.findIndex(o=>o.number===n);
+  if(i!==-1){ const completed = {...orders[i],completedTime:new Date().toISOString()}; archive.unshift(completed); orders.splice(i,1); saveAll(); renderAdmin(); toast('🎉 Commande '+n+' terminée'); n8nSend('orderCompleted', { orderNumber: n, type: completed.type }); }
+}
+
+// ============= ARCHIVE =============
+function openArchive() {
+  const l = document.getElementById('aList');
+  l.innerHTML = !archive.length ? '<p style="text-align:center;color:#aaa;padding:18px">Aucun historique</p>' :
+    archive.slice(0,50).map(o=>`<div class="aitem"><div class="anum">${o.number}</div><div class="ainfo"><div class="atype">${getTypeIcon(o.type)} ${getTypeLabel(o)}</div><div class="atime">${formatTime(o.completedTime)}</div></div></div>`).join('');
+  document.getElementById('archiveModal').classList.add('open');
+}
+function closeArchive(){ document.getElementById('archiveModal').classList.remove('open'); }
+function clearArchive(){ archive=[]; saveArchive(); closeArchive(); toast('🗑️ Historique vidé'); }
+
+// ============= HELPERS =============
+function getTypeIcon(typeId) {
+  const t = config.orderTypes.find(x=>x.id===typeId);
+  return t ? t.icon : '🍴';
+}
+function getDisplayTypeLabel(typeId) {
+  const t = config.orderTypes.find(x=>x.id===typeId);
+  return t ? t.label : '';
+}
+function getTypeLabel(order) {
+  const t = config.orderTypes.find(x=>x.id===order.type);
+  if(!t) return '';
+  // استخدام table/chaise إذا وجدت، وإلا استخدام extraVal
+  let numVal = order.table || order.chaise || order.extraVal;
+  return t.hasNumber && numVal ? t.label + ' N° ' + numVal : t.label;
+}
+function formatTime(iso){ return new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function toast(msg){ const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.getElementById('twrap').appendChild(el); setTimeout(()=>el.remove(),3200); }
+
+// ============= AUDIO =============
+function getAudioContext(){ if(!audioContext) audioContext=new(window.AudioContext||window.webkitAudioContext)(); return audioContext; }
+
+function playChime(callback) {
+  const ctx = getAudioContext();
+  if(ctx.state==='suspended') ctx.resume();
+  [[523,0,.22],[659,.28,.22],[784,.56,.4]].forEach(([freq,start,dur])=>{
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0,ctx.currentTime+start);
+    gain.gain.linearRampToValueAtTime(.6,ctx.currentTime+start+.03);
+    gain.gain.linearRampToValueAtTime(0,ctx.currentTime+start+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime+start); osc.stop(ctx.currentTime+start+dur+.05);
+  });
+  setTimeout(callback, 1100);
+}
+
+function showBigNumber(numStr) {
+  if(currentMode!=='display') return;
+  const dur = config.displayDuration || 30;
+  const overlay=document.getElementById('bigNumOverlay');
+  document.getElementById('bigNumValue').textContent=numStr;
+  document.getElementById('bigNumFr').textContent='🇫🇷 Commande numéro '+numberToFrench(numStr)+', votre commande est prête';
+  document.getElementById('bigNumEn').textContent='🇬🇧 Order number '+numStr+', your order is ready';
+  const bar=document.getElementById('bigNumBar');
+  bar.style.animation='none'; bar.offsetHeight;
+  bar.style.animation=`barShrink ${dur}s linear forwards`;
+  overlay.classList.add('show');
+  setTimeout(()=>overlay.classList.remove('show'), dur*1000);
+}
+
+function announceOrder(numStr) {
+  if(currentMode!=='display') return;
+  showBigNumber(numStr);
+  if(!soundEnabled) return;
+  const ctx=getAudioContext();
+  if(ctx.state==='suspended') ctx.resume();
+  playChime(()=>{
+    robustSpeak(
+      `Commande numéro ${numberToFrench(numStr)}, votre commande est prête, veuillez vous présenter s'il vous plaît`,
+      'fr-FR',
+      ()=>{
+        setTimeout(()=>{
+          robustSpeak(`Order number ${numStr}, your order is ready, please come forward`,'en-US',()=>hideAudioWave());
+        },600);
+      }
+    );
+  });
+  showAudioWave('🎙️ Commande '+numStr);
+}
+
+function robustSpeak(text, lang, callback) {
+  if(!window.speechSynthesis){ if(callback) callback(); return; }
+  const synth=window.speechSynthesis;
+  synth.cancel();
+
+  // انتظار تحميل الأصوات إذا لم تكن جاهزة
+  const speakWithVoices = () => {
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=lang; u.volume=1; u.rate=.88; u.pitch=1.05;
+    const voices=synth.getVoices();
+    let voice=null;
+    if(lang.startsWith('fr')) voice=voices.find(v=>v.lang==='fr-FR'&&/female|amelie|marie|google/i.test(v.name))||voices.find(v=>v.lang==='fr-FR')||voices.find(v=>v.lang.startsWith('fr'));
+    else voice=voices.find(v=>v.lang==='en-US'&&/female|google|samantha/i.test(v.name))||voices.find(v=>v.lang==='en-US')||voices.find(v=>v.lang.startsWith('en'));
+    if(voice) u.voice=voice;
+    let done=false;
+    const finish=()=>{ if(!done){ done=true; if(callback) callback(); } };
+    u.onend=finish; u.onerror=finish;
+    synth.speak(u);
+    if(navigator.userAgent.includes('Chrome')){
+      const fix=setInterval(()=>{ if(!synth.speaking){clearInterval(fix);return;} synth.pause(); synth.resume(); },10000);
+      const origFinish=finish;
+      u.onend=()=>{clearInterval(fix);origFinish();};
+      u.onerror=()=>{clearInterval(fix);origFinish();};
+    }
+  };
+
+  // التحقق من توفر الأصوات
+  if(synth.getVoices().length === 0) {
+    synth.onvoiceschanged = () => { speakWithVoices(); };
+    // مهلة احتياطية
+    setTimeout(() => { speakWithVoices(); }, 500);
+  } else {
+    setTimeout(() => { speakWithVoices(); }, 150);
+  }
+}
+
+async function triggerSound(orderNum) {
+  try {
+    const soundData={n:orderNum,ts:Date.now()};
+    localStorage.setItem(SK_SND,JSON.stringify(soundData));
+    broadcastUpdate('sound_trigger',{orderNum});
+    fbLastSoundTs=soundData.ts;
+    await fbSave('state/sound',soundData);
+  } catch(e) {}
+}
+
+function showAudioWave(text){ if(currentMode!=='display')return; document.getElementById('awTxt').textContent=text; document.getElementById('aw').classList.add('show'); }
+function hideAudioWave(){ document.getElementById('aw').classList.remove('show'); }
+
+function numberToFrench(s){
+  const n=parseInt(s,10);
+  if(n===100) return 'cent';
+  const w=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf','vingt','vingt et un','vingt-deux','vingt-trois','vingt-quatre','vingt-cinq','vingt-six','vingt-sept','vingt-huit','vingt-neuf','trente','trente et un','trente-deux','trente-trois','trente-quatre','trente-cinq','trente-six','trente-sept','trente-huit','trente-neuf','quarante','quarante et un','quarante-deux','quarante-trois','quarante-quatre','quarante-cinq','quarante-six','quarante-sept','quarante-huit','quarante-neuf','cinquante','cinquante et un','cinquante-deux','cinquante-trois','cinquante-quatre','cinquante-cinq','cinquante-six','cinquante-sept','cinquante-huit','cinquante-neuf','soixante','soixante et un','soixante-deux','soixante-trois','soixante-quatre','soixante-cinq','soixante-six','soixante-sept','soixante-huit','soixante-neuf','soixante-dix','soixante et onze','soixante-douze','soixante-treize','soixante-quatorze','soixante-quinze','soixante-seize','soixante-dix-sept','soixante-dix-huit','soixante-dix-neuf','quatre-vingts','quatre-vingt-un','quatre-vingt-deux','quatre-vingt-trois','quatre-vingt-quatre','quatre-vingt-cinq','quatre-vingt-six','quatre-vingt-sept','quatre-vingt-huit','quatre-vingt-neuf','quatre-vingt-dix','quatre-vingt-onze','quatre-vingt-douze','quatre-vingt-treize','quatre-vingt-quatorze','quatre-vingt-quinze','quatre-vingt-seize','quatre-vingt-dix-sept','quatre-vingt-dix-huit','quatre-vingt-dix-neuf'];
+  return w[n]||s;
+}
+
+// ============= PAIR MODAL =============
+function showPairModal() {
+  const hasFb = !!(config.fbUrl);
+  document.getElementById('pairNoFbWarn').style.display = hasFb ? 'none' : 'block';
+  document.getElementById('pairWithFbContent').style.display = hasFb ? 'block' : 'none';
+
+  if (hasFb) {
+    // Encode Firebase URL in link
+    const encoded = btoa(unescape(encodeURIComponent(config.fbUrl)));
+    const pairUrl = window.location.href.split('?')[0].split('#')[0] + '?sync=' + encoded;
+    const input = document.getElementById('pairUrlInput');
+    if (input) input.value = pairUrl;
+
+    // Generate QR code
+    const qrDiv = document.getElementById('pairQr');
+    if (qrDiv) {
+      qrDiv.innerHTML = '';
+      try {
+        if (window.QRCode) {
+          new QRCode(qrDiv, { text: pairUrl, width: 180, height: 180, colorDark: '#0C5F5A', colorLight: '#ffffff' });
+        } else {
+          qrDiv.innerHTML = '<div style="color:#999;font-size:11px;padding:10px">QR code indisponible<br>Copiez le lien ci-dessous</div>';
+        }
+      } catch(e) {
+        qrDiv.innerHTML = '<div style="color:#999;font-size:11px;padding:10px">Copiez le lien ci-dessous</div>';
+      }
+    }
+  }
+  document.getElementById('pairModal').classList.add('open');
+}
+
+function closePairModal() { document.getElementById('pairModal').classList.remove('open'); }
+
+function copyPairUrl() {
+  const input = document.getElementById('pairUrlInput');
+  if (!input) return;
+  const url = input.value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => toast('✅ Lien copié !')).catch(() => { input.select(); document.execCommand('copy'); toast('✅ Lien copié !'); });
+  } else {
+    input.select(); document.execCommand('copy'); toast('✅ Lien copié !');
+  }
+}
+
+// ============= SYNC PARAM (auto-configure from URL) =============
+function checkSyncParam() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const sync = params.get('sync');
+    if (!sync) return;
+    const fbUrl = decodeURIComponent(escape(atob(sync)));
+    if (fbUrl && fbUrl.startsWith('https://')) {
+      config.fbUrl = fbUrl;
+      saveConfig();
+      // Clean URL without reload
+      const cleanUrl = window.location.pathname + (window.location.hash || '');
+      window.history.replaceState({}, document.title, cleanUrl);
+      toast('🔗 Synchronisation Firebase configurée !');
+      startFbPolling();
+    }
+  } catch(e) {}
+}
+
+// ============= LOGO =============
+function handleLogoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 500000) { toast('⚠️ Image trop grande (max 500KB)'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    config.logoBase64 = e.target.result;
+    saveConfig();
+    applyLogo();
+    updateLogoPreview();
+    toast('✅ Logo enregistré');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogo() {
+  config.logoBase64 = null;
+  saveConfig();
+  applyLogo();
+  updateLogoPreview();
+  toast('🗑️ Logo supprimé');
+}
+
+function updateLogoPreview() {
+  const emoji = document.getElementById('logoPreviewEmoji');
+  const img = document.getElementById('logoPreviewImg');
+  if (!emoji || !img) return;
+  if (config.logoBase64) {
+    emoji.style.display = 'none';
+    img.style.display = 'block';
+    img.src = config.logoBase64;
+  } else {
+    emoji.style.display = 'block';
+    img.style.display = 'none';
+    emoji.textContent = config.icon || '🍕';
+  }
+}
+
+function applyLogo() {
+  // تطبيق اللوغو في كل الأماكن
+  const places = ['homeLogoImg', 'splashLogoImg', 'bigNumLogoImg'];
+  places.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (config.logoBase64) {
+      el.src = config.logoBase64;
+      el.style.display = 'block';
+      const sibling = el.previousElementSibling;
+      if (sibling) sibling.style.display = 'none';
+    } else {
+      el.style.display = 'none';
+      const sibling = el.previousElementSibling;
+      if (sibling) sibling.style.display = '';
+    }
+  });
+  // تحديث emoji في splash
+  document.getElementById('spIcon').textContent = config.logoBase64 ? '' : (config.icon || '🍕');
+  if (config.logoBase64) {
+    let splashImg = document.getElementById('splashLogoImg');
+    if (!splashImg) {
+      splashImg = document.createElement('img');
+      splashImg.id = 'splashLogoImg';
+      splashImg.style.cssText = 'width:80px;height:80px;object-fit:contain;border-radius:16px;animation:bob 1s ease infinite alternate';
+      document.getElementById('spIcon').after(splashImg);
+    }
+    splashImg.src = config.logoBase64;
+    splashImg.style.display = 'block';
+  }
+  // اللوغو في Home
+  const homeLogo = document.getElementById('homeLogo');
+  if (homeLogo) {
+    if (config.logoBase64) {
+      homeLogo.innerHTML = `<img src="${config.logoBase64}" style="width:80px;height:80px;object-fit:contain;border-radius:16px;margin-bottom:8px">`;
+    } else {
+      homeLogo.innerHTML = '';
+    }
+  }
+  // اللوغو في شاشة الرقم الكبير
+  const bigNumLogo = document.getElementById('bigNumLogoArea');
+  if (bigNumLogo) {
+    if (config.logoBase64) {
+      bigNumLogo.innerHTML = `<img src="${config.logoBase64}" style="width:64px;height:64px;object-fit:contain;border-radius:12px;margin-bottom:4px">`;
+    } else {
+      bigNumLogo.innerHTML = '';
+    }
+  }
+}
+document.getElementById('orderModal').addEventListener('click',function(e){if(e.target===this)closeOM();});
+document.getElementById('archiveModal').addEventListener('click',function(e){if(e.target===this)closeArchive();});
+document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings();});
+document.getElementById('adminPinModal').addEventListener('click',function(e){if(e.target===this)closeAdminPinModal();});
+document.getElementById('displayPinModal').addEventListener('click',function(e){if(e.target===this)closeDisplayPinModal();});
+document.getElementById('pairModal').addEventListener('click',function(e){if(e.target===this)closePairModal();});
+
+
+// ============= SYNC CHANNEL INDICATOR =============
+function setSyncChannel(channel) {
+  currentSyncChannel = channel;
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if (!dot || !label) return;
+  dot.className = 'sync-dot ' + channel;
+  const labels = {
+    firebase: '🟢 Firebase',
+    broadcast: '🔵 Local Fast',
+    local: '🟠 Local Poll',
+    n8n: '🟣 n8n',
+    manual: '🔴 Manuel',
+    offline: '🔴 Hors ligne'
+  };
+  label.textContent = labels[channel] || channel;
+}
+
+function showSyncIndicator() {
+  const el = document.getElementById('syncIndicator');
+  if (el) el.style.display = 'flex';
+}
+
+function hideSyncIndicator() {
+  const el = document.getElementById('syncIndicator');
+  if (el) el.style.display = 'none';
+}
+
+// ============= n8n WEBHOOKS =============
+async function n8nSend(event, data) {
+  if (!config.n8nUrl) return;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    await fetch(config.n8nUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event,
+        data,
+        restaurant: config.name,
+        timestamp: new Date().toISOString(),
+        mode: currentMode
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    setSyncChannel(SYNC_CHANNELS.N8N);
+  } catch(e) {
+    // n8n webhook failure is non-critical, just log it
+    if (e.name !== 'AbortError') console.warn('[n8n] Webhook error:', e);
+  }
+}
+
+// ============= HEALTH CHECK =============
+function startHealthCheck() {
+  if (healthCheckInt) clearInterval(healthCheckInt);
+  healthCheckInt = setInterval(async () => {
+    // 1. Check online status
+    isOnline = navigator.onLine;
+    if (!isOnline) {
+      setFbStatus('offline');
+      setSyncChannel(SYNC_CHANNELS.LOCAL);
+      // Local polling is always available
+      if (!localPollInt) startLocalPolling();
+      return;
+    }
+    // 2. Check Firebase health (if configured)
+    if (config.fbUrl && fbConsecutiveFails >= 3) {
+      // Try to reconnect Firebase
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        const r = await fetch(config.fbUrl + '/.json?shallow=true', { signal: controller.signal });
+        clearTimeout(timer);
+        if (r.ok) {
+          console.log('[HealthCheck] Firebase recovered — restarting polling');
+          fbConsecutiveFails = 0;
+          setFbStatus('connecting');
+          startFbPolling();
+        }
+      } catch(e) {}
+    }
+    // 3. Ensure local polling is always running as safety net
+    if (!localPollInt) startLocalPolling();
+  }, 15000); // check every 15 seconds
+}
+
+function stopHealthCheck() {
+  if (healthCheckInt) clearInterval(healthCheckInt);
+  healthCheckInt = null;
+}
+
+// ============= INIT =============
+function initApp() {
+  loadConfig();
+  checkSyncParam(); // Auto-configure from URL if present
+  applyConfig();
+  loadOrders();
+  loadArchive();
+  setFbStatus(config.fbUrl ? 'connecting' : 'local');
+  // Always start local polling as base fallback (cross-browser, same device)
+  startLocalPolling();
+  if (!checkSession()) {
+    setTimeout(() => {
+      document.getElementById('splash').classList.add('hide');
+      setTimeout(() => {
+        document.getElementById('splash').style.display = 'none';
+        document.getElementById('pinScreen').classList.add('active');
+      }, 600);
+    }, 1700);
+  } else {
+    document.getElementById('splash').style.display = 'none';
+  }
+}
+
+// التحقق من الترخيص عند البدء
+(function() {
+  const lic = localStorage.getItem(SK_LIC);
+  if (lic && VALID_LICENSES.includes(lic)) {
+    initApp();
+  } else {
+    setTimeout(()=>{
+      document.getElementById('splash').classList.add('hide');
+      setTimeout(()=>{ document.getElementById('splash').style.display='none'; document.getElementById('licenseScreen').classList.add('active'); },600);
+    },1700);
+  }
+})();
+</script>
+</body>
+</html>
